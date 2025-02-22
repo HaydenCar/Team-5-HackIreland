@@ -117,3 +117,9 @@ def check_file_existence(filename, s3_client, BUCKET_NAME):
             return False  # Object doesn't exist
         else:
             raise e  # Some other error occurred
+
+def getDirectoryFiles(directory, s3_client, BUCKET_NAME):
+    files = []
+    for file in s3_client.list_objects(Bucket=BUCKET_NAME, Prefix=directory)['Contents']:
+        files.append(file['Key'])
+    return files
