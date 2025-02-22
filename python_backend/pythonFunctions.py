@@ -61,32 +61,38 @@ def createNewParsedImageChat(client, image_file):
     # Extract and return the response
     return response.choices[0].message.content
 
-def upload_markdown(filename, fileContent,s3_client, BUCKET_NAME):
-    if not filename.endswith('.md'):
-        return jsonify({'error': 'Only markdown (.md) files are allowed'}), 400
-
-    try:
-        # Upload the file to S3 with the correct content type
-        s3_client.upload_fileobj(
-            io.BytesIO(fileContent.encode('utf-8')),
-            BUCKET_NAME,
-            filename,
-            ExtraArgs={'ContentType': 'text/markdown'}
-        )
+def upload_file(filename, fileContent, s3_client, BUCKET_NAME):
+    if filename.endswith('.md'):
+        # Upload markdown file (expects a string, so we encode it)
+        print(s3_client.put_object(
+            Body=io.BytesIO(fileContent.encode('utf-8')),
+            Bucket=BUCKET_NAME,
+            Key=filename,
+            ContentType='text/markdown'
+        ))
         return jsonify({'message': 'File uploaded successfully'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    
-def download_markdown(filename, s3_client, BUCKET_NAME):
-    if not filename.endswith('.md'):
-        return jsonify({'error': 'Only markdown (.md) files are allowed'}), 400
+    if filename.endswith('.jpg'):
+        # Upload image file (expects bytes, no need to encode)
+        print(s3_client.put_object(
+            Body=io.BytesIO(fileContent),
+            Bucket=BUCKET_NAME,
+            Key=filename,
+            ContentType='image/jpg'
+        ))
+        return jsonify({'message': 'File uploaded successfully'}), 200
 
-    try:
+    return jsonify({'error': 'Incompatible file type'}), 400
+
+    
+def download_file(filename, s3_client, BUCKET_NAME):
+    if filename.endswith('.md'):
         s3_response = s3_client.get_object(Bucket=BUCKET_NAME, Key=filename)
         file_content = s3_response['Body'].read().decode('utf-8')
         # You can also set response headers if you want to force a download
         return file_content
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    if filename.endswith('.jpg'):
+        s3_response = s3_client.get_object(Bucket=BUCKET_NAME, Key=filename)
+        file_content = s3_response['Body'].read()
+        return file_content
 
 

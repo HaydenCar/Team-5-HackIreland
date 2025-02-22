@@ -18,9 +18,16 @@
         </form>
     </div>
     <div class="container text-center mt-5">
+        <form action="/downloadImage" method="get">
+            <input type="text" name="imageID" required>
+            <button type="submit" class="btn btn-primary">Input image ID</button>
+        </form>
+    </div>
+    <div class="container text-center mt-5">
         <form action="/uploadImageQueryForparsing" method="post" enctype="multipart/form-data" class="mt-4">
-            <input type="file" name="file" accept="image/*" required>
-            <button type="submit" class="btn btn-primary">Upload Image for markdown Parsing</button>
+            <input type="text" name="markdownID" required>
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit" class="btn btn-primary">Upload Image and name</button>
         </form>
     </div>
 </body>
