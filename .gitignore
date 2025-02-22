@@ -67,3 +67,28 @@
 Thumbs.db
 /python_backend/API_KEYS.py
 /python_backend/__pycache__
+
+
+# Build and Output Folders
+bin/
+obj/
+
+# User-Specific Files
+*.vscode/
+*.vs/
+
+# Rider Logs and Settings
+*.iml
+*.ipr
+*.iws
+out/
+
+# Ignore compiled DLLs and executables
+*.exe
+*.dll
+*.pdb
+
+# Ignore temporary files
+*.log
+*.cache
+*.bak
