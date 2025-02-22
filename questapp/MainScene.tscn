@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3 uid="uid://dh6r33io2matj"]
+
+[ext_resource type="Script" path="res://main_scene.gd" id="1_er8ax"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_qfohn"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cw6fd"]
+
+[node name="XROrigin3D" type="XROrigin3D"]
+script = ExtResource("1_er8ax")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.380708, -0.34242, -2.82899)
+mesh = SubResource("BoxMesh_qfohn")
+surface_material_override/0 = SubResource("StandardMaterial3D_cw6fd")
+
+[node name="XRCamera3D" type="XRCamera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+
+[node name="LeftHand" type="XRController3D" parent="."]
+tracker = &"left_hand"
+
+[node name="RightHand" type="XRController3D" parent="."]
+tracker = &"right_hand"

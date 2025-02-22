@@ -42,6 +42,9 @@ s3_client = boto3.client('s3',
 def home():
     return render_template("/index.html")
 
+@app.route("/notes")
+def notes():
+    return render_template("/notes.html")
 
 
     
