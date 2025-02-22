@@ -92,3 +92,5 @@ out/
 *.log
 *.cache
 *.bak
+
+.venv/
