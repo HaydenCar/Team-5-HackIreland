@@ -1,5 +1,7 @@
 import openai
+from flask import request, Flask, render_template, jsonify
 import base64
+import io
 def createNewTextChat(client,chatRequest):
     output=""
     stream = client.chat.completions.create(
@@ -58,5 +60,33 @@ def createNewParsedImageChat(client, image_file):
     print(response.choices[0].message.content)
     # Extract and return the response
     return response.choices[0].message.content
+
+def upload_markdown(filename, fileContent,s3_client, BUCKET_NAME):
+    if not filename.endswith('.md'):
+        return jsonify({'error': 'Only markdown (.md) files are allowed'}), 400
+
+    try:
+        # Upload the file to S3 with the correct content type
+        s3_client.upload_fileobj(
+            io.BytesIO(fileContent.encode('utf-8')),
+            BUCKET_NAME,
+            filename,
+            ExtraArgs={'ContentType': 'text/markdown'}
+        )
+        return jsonify({'message': 'File uploaded successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+def download_markdown(filename, s3_client, BUCKET_NAME):
+    if not filename.endswith('.md'):
+        return jsonify({'error': 'Only markdown (.md) files are allowed'}), 400
+
+    try:
+        s3_response = s3_client.get_object(Bucket=BUCKET_NAME, Key=filename)
+        file_content = s3_response['Body'].read().decode('utf-8')
+        # You can also set response headers if you want to force a download
+        return file_content
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 

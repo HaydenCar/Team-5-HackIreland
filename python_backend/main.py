@@ -1,16 +1,29 @@
-from flask import request, Flask, render_template
+from flask import request, Flask, render_template, jsonify
+
+import os
+import boto3
 
 from API_KEYS import *
 from pythonFunctions import *
 import markdown
+import random
+
+from io import BytesIO
 
 
 app = Flask(__name__)
 
-client = openai.OpenAI(
+OpenAIClient = openai.OpenAI(
   organization='org-9TmA6PyMH2ZihJtThj58RMZT',
   project=OPENAI_API_PROJECT_ID,
 )
+
+s3_client = boto3.client('s3',
+                         aws_access_key_id=AWS_ACCESS_KEY_ID,
+                         aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                         region_name=AWS_REGION)
+
+
 
 @app.route("/")
 def home():
@@ -23,7 +36,7 @@ def uploadImageQuery():
     image = request.files.get("file")
     if image:
         # Do something with the uploaded file
-        return createNewImageChat(client, image)
+        return createNewImageChat(OpenAIClient, image)
     else:
         return "No file uploaded"
     
@@ -31,12 +44,24 @@ def uploadImageQuery():
 def uploadImageQueryForparsing():
     image = request.files.get("file")
     if image:
-        markdownResponse = createNewParsedImageChat(client, image)
+        id=str(random.random())[2:]
+        markdownResponse = createNewParsedImageChat(OpenAIClient, image)
+        upload_markdown("exampleMarkdowns/exampleMarkdown"+id+".md",markdownResponse,s3_client,BUCKET_NAME)
         htmlForm = markdown.markdown(markdownResponse)
         print(htmlForm)
+        print(id)
         return(htmlForm)
     else:
         return "No file uploaded"
+    
+@app.route("/downloadMarkdown", methods=["GET"])
+def downloadMarkdown():
+    filename = "exampleMarkdowns/exampleMarkdown"+request.args['markdownID']+".md"
+    markdownResponse =  download_markdown(filename,s3_client,BUCKET_NAME)
+    htmlForm = markdown.markdown(markdownResponse)
+    print(htmlForm)
+    print(id)
+    return(htmlForm)
 
 
 if __name__ == "__main__":

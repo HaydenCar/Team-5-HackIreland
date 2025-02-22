@@ -12,9 +12,9 @@
         <p class="lead">This is a basic Bootstrap-styled page served by Flask.</p>
     </div>
     <div class="container text-center mt-5">
-        <form action="/uploadImageQuery" method="post" enctype="multipart/form-data" class="mt-4">
-            <input type="file" name="file" accept="image/*" required>
-            <button type="submit" class="btn btn-primary">Upload Image</button>
+        <form action="/downloadMarkdown" method="get">
+            <input type="text" name="markdownID" required>
+            <button type="submit" class="btn btn-primary">Input markdown ID</button>
         </form>
     </div>
     <div class="container text-center mt-5">
