@@ -92,4 +92,6 @@ out/
 *.log
 *.cache
 *.bak
+
+.venv/
 /python_backend/.env
