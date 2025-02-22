@@ -94,3 +94,4 @@ out/
 *.bak
 
 .venv/
+/python_backend/.env

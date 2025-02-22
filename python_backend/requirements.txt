@@ -2,3 +2,5 @@ OpenAI
 Flask
 markdown
 boto3
+python-dotenv
+gunicorn

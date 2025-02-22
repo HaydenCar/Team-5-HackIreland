@@ -1,14 +1,27 @@
 from flask import request, Flask, render_template, jsonify
 
+from dotenv import load_dotenv
+
 import os
 import boto3
 
-from API_KEYS import *
+
+load_dotenv(override=True)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_PROJECT_ID = os.getenv("OPENAI_API_PROJECT_ID")
+
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = os.getenv("AWS_REGION")
+BUCKET_NAME = os.getenv("BUCKET_NAME")
+
 from pythonFunctions import *
 import markdown
-import random
 
 from io import BytesIO
+
+imageCache={}
+markdownCache={}
 
 
 app = Flask(__name__)
@@ -34,39 +47,65 @@ def notes():
     return render_template("/notes.html")
 
 
-@app.route("/uploadImageQuery", methods=["POST"])
-def uploadImageQuery():
-    image = request.files.get("file")
-    if image:
-        # Do something with the uploaded file
-        return createNewImageChat(OpenAIClient, image)
-    else:
-        return "No file uploaded"
     
 @app.route("/uploadImageQueryForparsing", methods=["POST"])
 def uploadImageQueryForparsing():
-    image = request.files.get("file")
-    if image:
-        id=str(random.random())[2:]
-        markdownResponse = createNewParsedImageChat(OpenAIClient, image)
-        upload_markdown("exampleMarkdowns/exampleMarkdown"+id+".md",markdownResponse,s3_client,BUCKET_NAME)
-        htmlForm = markdown.markdown(markdownResponse)
-        print(htmlForm)
-        print(id)
-        return(htmlForm)
-    else:
-        return "No file uploaded"
+    image = request.files["image"]
+    id = request.values["markdownID"]
     
-@app.route("/downloadMarkdown", methods=["GET"])
-def downloadMarkdown():
-    filename = "exampleMarkdowns/exampleMarkdown"+request.args['markdownID']+".md"
-    markdownResponse =  download_markdown(filename,s3_client,BUCKET_NAME)
+    # Generate markdown from the image
+    markdownResponse = createNewParsedImageChat(OpenAIClient, image)
+    
+    # Upload the markdown file (expects a string)
+    markdownCache[id] = markdownResponse
+    upload_file("markDowns/" + id + ".md", markdownResponse, s3_client, BUCKET_NAME)
+    
+    # Upload the image file (use a proper image extension and pass bytes)
+    # Reset the stream pointer to the beginning if needed.
+    image.seek(0)
+    imageCache[id] = image.read()
+    image.seek(0)
+    upload_file("images/" + id + ".jpg", image.read(), s3_client, BUCKET_NAME)
+    
+    # Convert markdown to HTML and return
     htmlForm = markdown.markdown(markdownResponse)
     print(htmlForm)
     print(id)
-    return(htmlForm)
+    return htmlForm
+    
+@app.route("/downloadMarkdown", methods=["GET"])
+def downloadMarkdown():
+    if(request.args['markdownID'] not in markdownCache):
+        filename = "markDowns/"+request.args['markdownID']+".md"
+        markdownResponse =  download_file(filename,s3_client,BUCKET_NAME)
+        if(markdownResponse != None):
+            htmlForm = markdown.markdown(markdownResponse)
+            markdownCache[request.args['markdownID']] = markdownResponse
+            print(htmlForm)
+            print(id)
+            return(htmlForm)
+        else:
+            return "Markdown not found"
+    else:
+        return(markdown.markdown((markdownCache[request.args['markdownID']])))
+
+@app.route("/downloadImage", methods=["GET"])
+def downloadImage():
+    if(request.args['imageID'] not in imageCache):
+        filename = "images/"+request.args['imageID']+".jpg"
+        imageResponse =  download_file(filename,s3_client,BUCKET_NAME)
+        if(imageResponse != None):
+            imageCache[request.args['imageID']] = imageResponse
+            return """
+            <img src="data:image/jpeg;base64,{}" style="width: auto; height: 100%;" />
+            """.format(base64.b64encode(imageResponse).decode("utf-8"),)
+        else:
+            return "Image not found"
+    else:
+        return """
+        <img src="data:image/jpeg;base64,{}" style="width: auto; height: 100%;" />
+        """.format(base64.b64encode(imageCache[request.args['imageID']]).decode("utf-8"),)
 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000,debug=True)
-
