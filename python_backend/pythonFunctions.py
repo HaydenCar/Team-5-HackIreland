@@ -99,3 +99,11 @@ def download_file(filename, s3_client, BUCKET_NAME):
     except ClientError as e:
         if e.response['Error']['Code'] == '404':
             return jsonify({'error': 'File not found'}), 404
+
+def delete_file(filename, s3_client, BUCKET_NAME):
+    try:
+        s3_client.delete_object(Bucket=BUCKET_NAME, Key=filename)
+        return jsonify({'message': 'File deleted successfully'}), 200
+    except ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            return jsonify({'error': 'File not found'}), 404

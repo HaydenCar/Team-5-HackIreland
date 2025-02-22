@@ -103,6 +103,18 @@ def downloadImage():
         <img src="data:image/jpeg;base64,{}" style="width: auto; height: 100%;" />
         """.format(base64.b64encode(imageCache[request.args['imageID']]).decode("utf-8"),)
 
+@app.route("/deleteImageAndMarkdown", methods=["POST"])
+def deleteImageAndMarkdown():
+    if(request.form["dataID"] in imageCache):
+        del imageCache[request.form["dataID"]]
+        del markdownCache[request.args['markdownID']]
+    imagename = "images/"+request.form["dataID"]+".jpg"
+    delete_file(imagename,s3_client,BUCKET_NAME)
+
+    markDownName = "markDowns/"+request.form["dataID"]+".md"
+    delete_file(markDownName,s3_client,BUCKET_NAME)
+    return "Deleted"
+
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000,debug=True)
+        app.run(host="0.0.0.0", port=5000,debug=True)
