@@ -65,3 +65,5 @@
 # Windows Specific #
 # ================ #
 Thumbs.db
+/python_backend/API_KEYS.py
+/python_backend/__pycache__
