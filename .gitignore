@@ -1,30 +1,69 @@
-﻿# Rider and JetBrains IDE
-.idea/
+# =============== #
+# Unity Generated #
+# =============== #
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Mm]emoryCaptures/
 
-# Build and Output Folders
-bin/
-obj/
-
-# User-Specific Files
-*.user
+# ========================= #
+# Unity Specific Exclusions #
+# ========================= #
+/[Uu]ser[Ss]ettings/
+*.pidb
 *.suo
-*.vscode/
-*.vs/
-
-# Rider Logs and Settings
-.idea/
-*.iml
-*.ipr
-*.iws
-out/
-
-# Ignore compiled DLLs and executables
-*.exe
-*.dll
-*.pdb
-
-# Ignore temporary files
+*.user
+*.userprefs
+*.csproj
+*.unityproj
+*.sln
+*.swp
 *.tmp
-*.log
-*.cache
-*.bak
+*.svd
+
+# ======================== #
+# Unity Plugin Exclusions #
+# ======================== #
+/Packages/com.unity.addressables/
+*.apk
+*.aab
+*.ipa
+
+# ==================== #
+# Git LFS for Assets  #
+# ==================== #
+# Large binary files like models, textures, and audio should use LFS
+*.psd
+*.fbx
+*.png
+*.jpg
+*.wav
+*.mp3
+*.ogg
+*.mp4
+
+# =============== #
+# Visual Studio   #
+# =============== #
+.vs/
+
+# ================= #
+# JetBrains Rider  #
+# ================= #
+.idea/
+
+# =============== #
+# Mac Specific    #
+# =============== #
+.DS_Store
+._*
+
+# ================ #
+# Windows Specific #
+# ================ #
+Thumbs.db
+/python_backend/API_KEYS.py
+/python_backend/__pycache__
