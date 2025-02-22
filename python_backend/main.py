@@ -1,12 +1,23 @@
 from flask import request, Flask, render_template, jsonify
 
+from dotenv import load_dotenv
+
 import os
 import boto3
 
-from API_KEYS import *
+from python_backend.API_KEYS import OPENAI_API_KEY, OPENAI_API_PROJECT_ID
+
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_PROJECT_ID = os.getenv("OPENAI_API_PROJECT_ID")
+
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = os.getenv("AWS_REGION")
+BUCKET_NAME = os.getenv("BUCKET_NAME")
+
 from pythonFunctions import *
 import markdown
-import random
 
 from io import BytesIO
 
