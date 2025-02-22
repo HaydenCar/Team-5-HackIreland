@@ -6,7 +6,7 @@ import os
 import boto3
 
 
-load_dotenv()
+load_dotenv(override=True)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_API_PROJECT_ID = os.getenv("OPENAI_API_PROJECT_ID")
 
@@ -75,11 +75,14 @@ def downloadMarkdown():
     if(request.args['markdownID'] not in markdownCache):
         filename = "markDowns/"+request.args['markdownID']+".md"
         markdownResponse =  download_file(filename,s3_client,BUCKET_NAME)
-        htmlForm = markdown.markdown(markdownResponse)
-        markdownCache[request.args['markdownID']] = markdownResponse
-        print(htmlForm)
-        print(id)
-        return(htmlForm)
+        if(markdownResponse != None):
+            htmlForm = markdown.markdown(markdownResponse)
+            markdownCache[request.args['markdownID']] = markdownResponse
+            print(htmlForm)
+            print(id)
+            return(htmlForm)
+        else:
+            return "Markdown not found"
     else:
         return(markdown.markdown((markdownCache[request.args['markdownID']])))
 
@@ -88,10 +91,13 @@ def downloadImage():
     if(request.args['imageID'] not in imageCache):
         filename = "images/"+request.args['imageID']+".jpg"
         imageResponse =  download_file(filename,s3_client,BUCKET_NAME)
-        imageCache[request.args['imageID']] = imageResponse
-        return """
-        <img src="data:image/jpeg;base64,{}" style="width: auto; height: 100%;" />
-        """.format(base64.b64encode(imageResponse).decode("utf-8"),)
+        if(imageResponse != None):
+            imageCache[request.args['imageID']] = imageResponse
+            return """
+            <img src="data:image/jpeg;base64,{}" style="width: auto; height: 100%;" />
+            """.format(base64.b64encode(imageResponse).decode("utf-8"),)
+        else:
+            return "Image not found"
     else:
         return """
         <img src="data:image/jpeg;base64,{}" style="width: auto; height: 100%;" />

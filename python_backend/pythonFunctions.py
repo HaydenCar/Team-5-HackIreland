@@ -1,5 +1,6 @@
 import openai
 from flask import request, Flask, render_template, jsonify
+from botocore.exceptions import ClientError
 import base64
 import io
 def createNewTextChat(client,chatRequest):
@@ -85,14 +86,16 @@ def upload_file(filename, fileContent, s3_client, BUCKET_NAME):
 
     
 def download_file(filename, s3_client, BUCKET_NAME):
-    if filename.endswith('.md'):
-        s3_response = s3_client.get_object(Bucket=BUCKET_NAME, Key=filename)
-        file_content = s3_response['Body'].read().decode('utf-8')
-        # You can also set response headers if you want to force a download
-        return file_content
-    if filename.endswith('.jpg'):
-        s3_response = s3_client.get_object(Bucket=BUCKET_NAME, Key=filename)
-        file_content = s3_response['Body'].read()
-        return file_content
-
-
+    try:
+        if filename.endswith('.md'):
+            s3_response = s3_client.get_object(Bucket=BUCKET_NAME, Key=filename)
+            file_content = s3_response['Body'].read().decode('utf-8')
+            # You can also set response headers if you want to force a download
+            return file_content
+        if filename.endswith('.jpg'):
+            s3_response = s3_client.get_object(Bucket=BUCKET_NAME, Key=filename)
+            file_content = s3_response['Body'].read()
+            return file_content
+    except ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            return jsonify({'error': 'File not found'}), 404
