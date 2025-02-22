@@ -1,0 +1,30 @@
+﻿# Rider and JetBrains IDE
+.idea/
+
+# Build and Output Folders
+bin/
+obj/
+
+# User-Specific Files
+*.user
+*.suo
+*.vscode/
+*.vs/
+
+# Rider Logs and Settings
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Ignore compiled DLLs and executables
+*.exe
+*.dll
+*.pdb
+
+# Ignore temporary files
+*.tmp
+*.log
+*.cache
+*.bak
