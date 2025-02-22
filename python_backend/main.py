@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 import os
 import boto3
 
-from python_backend.API_KEYS import OPENAI_API_KEY, OPENAI_API_PROJECT_ID
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
