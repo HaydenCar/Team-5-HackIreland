@@ -111,12 +111,15 @@ def deleteImageAndMarkdown():
     if(request.form["dataID"] in imageCache):
         del imageCache[request.form["dataID"]]
         del markdownCache[request.args['markdownID']]
-    imagename = "images/"+request.form["dataID"]+".jpg"
-    delete_file(imagename,s3_client,BUCKET_NAME)
+    imageName = "images/"+request.form["dataID"]+".jpg"
 
     markDownName = "markDowns/"+request.form["dataID"]+".md"
-    delete_file(markDownName,s3_client,BUCKET_NAME)
-    return "Deleted"
+    imageResponse=delete_file(imageName,s3_client,BUCKET_NAME)
+    markDownResponse=delete_file(markDownName,s3_client,BUCKET_NAME)
+    if(imageResponse and markDownResponse):
+        return "Deleted"
+    else:
+        return "Failed"
 
 
 if __name__ == "__main__":
