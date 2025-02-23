@@ -309,23 +309,27 @@ def upload_temp():
         return redirect(url_for("home"))
 
     
-    # Redirect to the highlight page using the saved filename as the image ID
-    encoded_image = base64.b64encode(image_bytes).decode('utf-8')
-    return redirect(url_for("highlight", imageData=encoded_image, noteID=note_id, imageType=image_file.content_type))
+    # Send the imageData through a POST request
+    return render_template("highlight.html",note_id=note_id,imageType=image_file.content_type).replace("data.imageData", '"'+base64.b64encode(image_bytes).decode('utf-8')+'"')
 
 
 # NEW: Highlight endpoint
-@app.route("/highlight")
+@app.route("/highlight", methods=["POST"])
 @login_required
 def highlight():
-    imageType = request.args.get("imageType")
-    imageData = request.args.get("imageData")
+    imageType = request.form.get("imageType")
+    imageData = request.form.get("imageData")
     note_id = request.args.get("noteID")
     if not imageData or not note_id:
         flash("Image ID and Note ID are required", "error")
         return redirect(url_for("notes"))
     user_email = current_user.id
-    return render_template("highlight.html", imageData=imageData, imageType=imageType, note_id=note_id)
+    form_data = {
+        "imageData": imageData,
+        "imageType": imageType,
+        "note_id": note_id
+    }
+    return render_template("highlight.html", formData=form_data)
 
 if __name__ == "__main__":
     try:

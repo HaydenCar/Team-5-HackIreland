@@ -81,9 +81,9 @@
 <script>
   
   document.addEventListener("DOMContentLoaded", function() {
-    const imageData= "{{imageData}}";
-    // Determine the correct MIME type for your image
-    const mimeType = "image/"+"{{imageType}}"; 
+    console.log(event);
+    const imageData = data.imageData;
+    const mimeType = "image/" + "{{imageType}}";
     const imageUrl = `data:${mimeType};base64,` + imageData;
 
     const canvasEl = document.getElementById("highlightCanvas");
