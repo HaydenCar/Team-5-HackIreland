@@ -3,6 +3,7 @@ require 'sinatra/reloader' if development?
 require 'rtesseract'
 require 'dotenv/load'
 require 'redcarpet'
+require 'json'
 
 # Enable static files in the public folder
 set :public_folder, File.dirname(__FILE__) + '/public'
@@ -58,6 +59,11 @@ post '/save_note' do
   redirect "/book/#{book_name}"
 end
 
+get '/books.json' do
+  content_type :json
+  $books.to_json
+end
+
 get '/books' do
   erb :books, locals: { books: $books }
 end
@@ -67,4 +73,27 @@ get '/book/:book_name' do
   book_notes = $books[book_name] || {}
 
   erb :book, locals: { book_name: book_name, notes: book_notes }
+end
+
+post '/highlight' do
+  if params[:image] && params[:x] && params[:y] && params[:width] && params[:height]
+    # Save the uploaded file
+    file = params[:image][:tempfile]
+    filename = params[:image][:filename]
+    filepath = "./public/uploads/#{filename}"
+    File.open(filepath, 'wb') do |f|
+      f.write(file.read)
+    end
+
+    # Extract text from the highlighted area
+    x = params[:x].to_i
+    y = params[:y].to_i
+    width = params[:width].to_i
+    height = params[:height].to_i
+
+    extracted_text = RTesseract.new(filepath, rect: [x, y, width, height]).to_s
+    extracted_text
+  else
+    "No image or coordinates provided."
+  end
 end

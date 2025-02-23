@@ -1,6 +1,10 @@
 source 'https://rubygems.org'
-gem 'sinatra'
-gem 'sinatra-contrib' # for additional Sinatra features
+
+# Use compatible versions of Sinatra and Sinatra-contrib
+gem 'sinatra', '~> 3.2.0'
+gem 'sinatra-contrib', '~> 3.2.0'
+
+# Other gems
 gem 'thin' # or 'puma' as the web server
 gem 'rtesseract'
 gem 'dotenv-rails', groups: [:development, :test]

@@ -31,7 +31,7 @@
           <!-- Image Column -->
           <div class="col-md-6">
             <div class="text-center mb-4">
-              <img src="/uploads/<%= filename %>" alt="Uploaded Image" class="img-fluid rounded shadow">
+              <img src="/uploads/<%= filename %>" alt="Uploaded Image" class="img-fluid rounded shadow" id="uploaded-image">
             </div>
           </div>
           <!-- Text Column -->
@@ -55,10 +55,14 @@
             </div>
             <button type="submit" class="btn btn-success btn-lg">Save to Book</button>
           </form>
+          <button id="highlight-button" class="btn btn-secondary btn-lg mt-3">Highlight and Extract Text</button>
           <a href="/" class="btn btn-primary btn-lg mt-3">Upload Another Image</a>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Include the external JavaScript file -->
+  <script src="/js/highlight.js"></script>
 </body>
 </html>

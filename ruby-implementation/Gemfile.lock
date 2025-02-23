@@ -144,8 +144,8 @@ DEPENDENCIES
   pg
   redcarpet
   rtesseract
-  sinatra
-  sinatra-contrib
+  sinatra (~> 3.2.0)
+  sinatra-contrib (~> 3.2.0)
   thin
 
 BUNDLED WITH
