@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-Canvas Page
+  Canvas Page
 {% endblock %}
 
 {% block head %}
@@ -12,19 +12,15 @@ Canvas Page
   .canvas-wrapper {
     display: flex;
     justify-content: center;
-    padding: 5px;
-    /* Adds some spacing around the canvas */
+    padding: 20px; /* Adds some spacing around the canvas */
   }
 
   .canvas-container {
     width: 100%;
-    max-width: 340px;
-    /* Mobile max size */
-    aspect-ratio: 1 / 1;
-    /* Keeps it square */
+    max-width: 300px; /* Mobile max size */
+    aspect-ratio: 1 / 1; /* Keeps it square */
     border: 1px solid #ccc;
-    background-color: black;
-    /* Fills unused space */
+    background-color: black; /* Fills unused space */
     position: relative;
     overflow: hidden;
   }
@@ -32,14 +28,8 @@ Canvas Page
   /* Scale up on larger desktops */
   @media (min-width: 992px) {
     .canvas-container {
-      max-width: 1000px;
-      /* or up to 1200px, your choice */
+      max-width: 1000px; /* or up to 1200px, your choice */
     }
-
-    .canvas-wrapper{
-      padding: 20px;
-    }
-
   }
 
   /* Ensure the canvas fills the container */
@@ -61,13 +51,13 @@ Canvas Page
   <div class="glass content-panel">
     <!-- --------------- Your Canvas Page Content --------------- -->
     <div class="container text-center mb-3">
-      <p>Highlight and select images!</p>
+      <p>Canvas is a responsive square. Unused space is black.</p>
       <div class="d-flex justify-content-center mb-3">
-        <button id="highlightToolBtn" class="btn btn-secondary mx-2">
-          Highlighter
+        <button id="highlightToolBtn" class="btn btn-primary mx-2">
+          Highlight (Freehand)
         </button>
         <button id="rectSelectToolBtn" class="btn btn-secondary mx-2">
-          Image Select
+          Rect. Select
         </button>
       </div>
     </div>
@@ -79,7 +69,7 @@ Canvas Page
     </div>
 
     <div class="container text-center mt-3">
-      <button id="finishBtn" class="btn btn-success">Finish and Format!</button>
+      <button id="finishBtn" class="btn btn-success">Finish</button>
     </div>
   </div>
 </div>
@@ -110,8 +100,7 @@ Canvas Page
     }
 
     function loadBackgroundImage() {
-      const imageUrl = "/static/image.png"; // Use correct path
-      fabric.Image.fromURL(imageUrl, function (img) {
+      fabric.Image.fromURL(imageUrl, function(img) {
         const scaleFactor = Math.min(canvas.width / img.width, canvas.height / img.height);
         img.scale(scaleFactor);
         img.set({
@@ -149,7 +138,7 @@ Canvas Page
 
       let rect, isDown, origX, origY;
 
-      canvas.on("mouse:down", function (o) {
+      canvas.on("mouse:down", function(o) {
         isDown = true;
         const pointer = canvas.getPointer(o.e);
         origX = pointer.x;
@@ -167,7 +156,7 @@ Canvas Page
         canvas.add(rect);
       });
 
-      canvas.on("mouse:move", function (o) {
+      canvas.on("mouse:move", function(o) {
         if (!isDown) return;
         const pointer = canvas.getPointer(o.e);
         rect.set({
@@ -179,7 +168,7 @@ Canvas Page
         canvas.renderAll();
       });
 
-      canvas.on("mouse:up", function () {
+      canvas.on("mouse:up", function() {
         isDown = false;
         // If you want to allow multiple rectangles, remove these unbinds:
         canvas.off("mouse:down");
@@ -193,7 +182,7 @@ Canvas Page
     document.getElementById("highlightToolBtn").addEventListener("click", enableHighlightTool);
     document.getElementById("rectSelectToolBtn").addEventListener("click", enableRectTool);
 
-    document.getElementById("finishBtn").addEventListener("click", function () {
+    document.getElementById("finishBtn").addEventListener("click", function() {
       const objects = canvas.getObjects();
       console.log("Canvas objects:", objects);
       alert("Finish clicked. Check console for objects data.");
