@@ -418,6 +418,7 @@ def upload_highlighted_image():
     <p>Extracted lines:</p>
     <ul>{}</ul>
     <p>Markdown key: <code>{}</code></p>
+    <p><a href="/notes">Go back to /notes</a></p>
     """.format(
         base64.b64encode(image_bytes).decode("utf-8"),
         "\n".join(["<li>{}</li>".format(line) for line in extracted_lines]),
