@@ -5,29 +5,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}HoloNote{% endblock %}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
   <style>
     /* Scrollbar and layout styles */
     ::-webkit-scrollbar {
       width: 6px;
       background-color: transparent;
     }
-
     ::-webkit-scrollbar-track {
       background: transparent;
     }
-
     ::-webkit-scrollbar-thumb {
       background-color: #92a4e0;
       border-radius: 6px;
       border: 1px solid transparent;
     }
-
     ::-webkit-scrollbar-thumb:hover {
       background-color: #8ca4f2;
       cursor: pointer;
     }
-
     ::-webkit-scrollbar-button {
       display: none;
       width: 0;
@@ -38,25 +37,43 @@
       scrollbar-width: thin;
       scrollbar-color: #92a4e0 transparent;
     }
-
-    html,
-    body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    html, body {
+    margin: 0;
+    padding: 0;
+    /* Let them expand: */
+    min-height: 100%;
+    /* box-sizing stays if you like */
+    box-sizing: border-box;
     }
 
     body {
-      display: flex;
-      flex-direction: column;
-      background: linear-gradient(45deg, #8ca4f2ba, #e4e7dfba);
+    background: linear-gradient(45deg, #8ca4f2ba, #e4e7dfba);
+    background-repeat: no-repeat;
+    background-size: cover;   /* Or remove if you prefer the gradient not scaled */
     }
+
 
     .navbar {
       flex: 0 0 auto;
       z-index: 999;
       padding: 1rem 2rem;
+    }
+
+    /* Shrink navbar text and button sizes on small screens */
+    @media (max-width: 576px) {
+      .navbar {
+        padding: 0.5rem 1rem;
+      }
+      .navbar-brand {
+        font-size: 1.3rem; /* Smaller than default */
+      }
+      .navbar-text {
+        font-size: 0.9rem; /* Slightly smaller text */
+      }
+      .btn {
+        font-size: 0.85rem;
+        padding: 0.3rem 0.6rem;
+      }
     }
 
     .main-container {
@@ -69,13 +86,11 @@
       padding: 1rem 2rem 2rem 2rem;
       box-sizing: border-box;
     }
-
     .glass {
       background: rgba(255, 255, 255, 0.5);
       backdrop-filter: blur(5px);
       border-radius: 10px;
     }
-
     .side-panel {
       width: 20%;
       min-width: 10rem;
@@ -85,7 +100,6 @@
       padding: 1rem;
       box-sizing: border-box;
     }
-
     .content-panel {
       width: 65%;
       min-width: 40rem;
@@ -99,12 +113,10 @@
       margin-bottom: 1rem;
       font-weight: 600;
     }
-
     .notes-container {
       padding: 0;
       margin: 0;
     }
-
     .note-link {
       display: block;
       margin: 0.25rem 0;
@@ -114,19 +126,16 @@
       border: none;
       padding: 0.5rem 0;
     }
-
     .note-link:hover {
       text-decoration: none;
       color: #2b3861;
       background-color: transparent;
       cursor: pointer;
     }
-
     .navbar-brand {
       font-size: 1.7rem;
       font-weight: 500;
       padding: 0;
-      color: #2b3861;
       text-decoration: none;
     }
   </style>
@@ -137,13 +146,13 @@
   <!-- HEADER / NAVBAR -->
   <nav class="navbar navbar-expand-lg navbar-light">
     <div class="container-fluid">
-      <a class="navbar-brand" href="/notes">HoloNote</a>
+      <a class="navbar-brand" href="/notes">HoloNote ✨</a>
       <div class="d-flex">
         {% if current_user.is_authenticated %}
-        <span class="navbar-text me-3">Logged in as: {{ current_user.id }}</span>
-        <a class="btn btn-outline-danger" href="/logout">Logout</a>
+          <span class="navbar-text me-3">Logged in as: {{ current_user.id }}</span>
+          <a class="btn btn-outline-danger align-content-center" href="/logout">Logout</a>
         {% else %}
-        <a class="btn btn-outline-primary" href="/login">Login</a>
+          <a class="btn btn-outline-primary align-content-center" href="/login">Login</a>
         {% endif %}
       </div>
     </div>
@@ -152,8 +161,9 @@
   <!-- MAIN CONTENT AREA -->
   {% block content %}{% endblock %}
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+  ></script>
   {% block scripts %}{% endblock %}
 </body>
-
 </html>
