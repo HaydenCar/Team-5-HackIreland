@@ -410,12 +410,19 @@ def upload_highlighted_image():
     except Exception as e:
         return jsonify({"error": f"Failed to upload updated markdown: {str(e)}"}), 500
 
-    return jsonify({
-        "message": "Image uploaded, text extracted, markdown updated successfully.",
-        "highlighted_image": highlighted_s3_key,
-        "extracted_lines": extracted_lines,
-        "markdown_key": note_md_key
-    }), 200
+    return """
+    <h1>Image uploaded, text extracted, markdown updated successfully.</h1>
+    <p>
+        <img src="data:image/png;base64,{}" />
+    </p>
+    <p>Extracted lines:</p>
+    <ul>{}</ul>
+    <p>Markdown key: <code>{}</code></p>
+    """.format(
+        base64.b64encode(image_bytes).decode("utf-8"),
+        "\n".join(["<li>{}</li>".format(line) for line in extracted_lines]),
+        note_md_key
+    ), 200
 
 
 def call_openai_for_extracted_text(openai_client, extracted_text):

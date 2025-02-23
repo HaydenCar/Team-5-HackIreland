@@ -144,7 +144,7 @@ Canvas Page
     canvas.isDrawingMode = true;
     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
     canvas.freeDrawingBrush.color = "rgba(183, 252, 98, 0.5)";
-    canvas.freeDrawingBrush.width = 15;
+    canvas.freeDrawingBrush.width = 30;
     canvas.off("mouse:down");
     canvas.off("mouse:move");
     canvas.off("mouse:up");
@@ -206,15 +206,9 @@ Canvas Page
         noteID: noteID // use the same noteID from above
       })
     })
-    .then(response => response.json())
-    .then(data => {
-      alert("Your highlighted image was uploaded to S3!");
-      if (data.error) {
-        console.error("Error uploading:", data.error);
-      } else {
-        console.log("Success:", data);
-        alert("Your highlighted image and new markdown have been updated!");
-      }
+    .then(response => response.text())
+    .then(html => {
+      document.body.innerHTML = html;
     })
     .catch(err => console.error("Fetch error:", err));
   });
