@@ -289,7 +289,7 @@ def create_note():
         return jsonify({"success": False, "error": "No note name provided."})
     user_email = current_user.id
     sanitized_name = note_name.strip().replace(" ", "_")
-    initial_content = f"# {note_name}\n\n"
+    initial_content = "" 
     s3_key = f"{user_email}/markDowns/{sanitized_name}.md"
     try:
         s3_client.put_object(Bucket=BUCKET_NAME, Key=s3_key, Body=initial_content)
@@ -430,17 +430,19 @@ def call_openai_for_extracted_text(openai_client, extracted_text):
 
     system_instructions = (
         "You are an AI that outputs only valid Markdown in a single text block.\n"
-        "- Start with a single H1 heading (#) for the main title.\n"
-        "- Then use bullet points or sub-headings (##) for details.\n"
+        "- Write the text as natural, free-flowing notes.\n"
+        "- You may use bullet points, sub-headings, or short paragraphs.\n"
         "- Keep it concise, around 100 words max.\n"
         "- Use **bold** for emphasis if needed.\n"
-        "- Do not output anything except the final Markdown."
+        "- Do not mention that these are extracted lines or from an image.\n"
+        "- Output only the final Markdown (no extra commentary)."
     )
 
     user_prompt = (
-        f"Here are some extracted lines from the image:\n\n"
         f"{extracted_text}\n\n"
-        "Combine them into a concise markdown note."
+        "Rewrite these lines in a concise, natural markdown format. "
+        "Do not reference that they were highlighted or extracted. "
+        "Keep it simple and direct."
     )
 
     response = openai_client.chat.completions.create(
