@@ -79,7 +79,13 @@
 <!-- Fabric.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.2.4/fabric.min.js"></script>
 <script>
+  
   document.addEventListener("DOMContentLoaded", function() {
+    const imageData= "{{imageData}}";
+    // Determine the correct MIME type for your image
+    const mimeType = "image/"+"{{imageType}}"; 
+    const imageUrl = `data:${mimeType};base64,` + imageData;
+
     const canvasEl = document.getElementById("highlightCanvas");
     const container = document.querySelector(".canvas-container");
     const canvas = new fabric.Canvas("highlightCanvas");
@@ -94,7 +100,6 @@
     }
 
     function loadBackgroundImage() {
-      const imageUrl = "/static/image.png"; // Use correct path
       fabric.Image.fromURL(imageUrl, function(img) {
         const scaleFactor = Math.min(canvas.width / img.width, canvas.height / img.height);
         img.scale(scaleFactor);
@@ -107,11 +112,17 @@
       }, { crossOrigin: "anonymous" });
     }
 
+
+    function changeBackground(newImageData) {
+      canvas.setBackgroundImage(newImageData, canvas.renderAll.bind(canvas));
+    }
+
+
     /* Tools */
     function enableHighlightTool() {
       canvas.isDrawingMode = true;
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-      canvas.freeDrawingBrush.color = "rgba(183, 252, 98, 1)";
+      canvas.freeDrawingBrush.color = "rgba(183, 252, 98, 0.5)";
       canvas.freeDrawingBrush.width = 15;
       canvas.off("mouse:down");
       canvas.off("mouse:move");
@@ -181,11 +192,11 @@
     resizeCanvas();
     loadBackgroundImage();
     enableHighlightTool();
-
+    changeBackground(imageData);
     /* Resize on window change */
     window.addEventListener("resize", () => {
       resizeCanvas();
-      loadBackgroundImage();
+      console.log("Window resized");
     });
   });
 </script>

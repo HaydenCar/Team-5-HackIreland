@@ -300,37 +300,32 @@ def create_note():
 @app.route("/uploadTemp", methods=["POST"])
 @login_required
 def upload_temp():
-    image_file = request.files.get("image")
+    image_file = request.files["image"]
+    image_file.seek(0)
+    image_bytes = image_file.read()
     note_id = request.form.get("noteID")
-    if not image_file or not note_id:
+    if not image_bytes or not note_id:
         flash("Image or Note ID is missing", "error")
         return redirect(url_for("home"))
-    
-    # Use the OS temporary directory
-    temp_dir = tempfile.gettempdir()
-    if not os.path.exists(temp_dir):
-        os.makedirs(temp_dir)
-    filename = secure_filename(image_file.filename)
-    temp_path = os.path.join(temp_dir, filename)
-    image_file.save(temp_path)
-    flash("Image uploaded to temp folder!", "success")
+
     
     # Redirect to the highlight page using the saved filename as the image ID
-    return redirect(url_for("highlight", imageID=filename, noteID=note_id))
+    encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+    return redirect(url_for("highlight", imageData=encoded_image, noteID=note_id, imageType=image_file.content_type))
 
 
 # NEW: Highlight endpoint
 @app.route("/highlight")
 @login_required
 def highlight():
-    image_id = request.args.get("imageID")
+    imageType = request.args.get("imageType")
+    imageData = request.args.get("imageData")
     note_id = request.args.get("noteID")
-    if not image_id or not note_id:
+    if not imageData or not note_id:
         flash("Image ID and Note ID are required", "error")
         return redirect(url_for("notes"))
     user_email = current_user.id
-    image_url = f"https://{BUCKET_NAME}.s3.amazonaws.com/{user_email}/images/{image_id}.jpg"
-    return render_template("highlight.html", image_url=image_url, image_id=image_id, note_id=note_id)
+    return render_template("highlight.html", imageData=imageData, imageType=imageType, note_id=note_id)
 
 if __name__ == "__main__":
     try:
