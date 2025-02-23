@@ -15,6 +15,7 @@
       <button id="cameraButton" class="btn btn-primary">Show Live Feed</button>
       <div id="cameraFeed" style="display:none; text-align: center;">
         <video id="video" width="640" height="480" autoplay></video>
+        <p id="cameraError" style="color: red; display: none;">Camera access denied or unavailable.</p>
       </div>
     </div>
 
@@ -90,26 +91,32 @@
   document.getElementById('cameraButton').addEventListener('click', function() {
     const cameraFeed = document.getElementById('cameraFeed');
     const video = document.getElementById('video');
+    const cameraError = document.getElementById('cameraError');
 
     if (cameraFeed.style.display === 'none') {
+      // Show the camera feed
       cameraFeed.style.display = 'block';
+      cameraError.style.display = 'none'; // Hide error message
+
+      // Access the camera
       navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
           video.srcObject = stream;
         })
         .catch(err => {
           console.error('Error accessing camera: ', err);
+          cameraError.style.display = 'block'; // Show error message
+          cameraFeed.style.display = 'none'; // Hide the feed if there's an error
         });
     } else {
+      // Hide the camera feed and stop the stream
       cameraFeed.style.display = 'none';
       const stream = video.srcObject;
-      const tracks = stream.getTracks();
-
-      tracks.forEach(track => {
-        track.stop();
-      });
-
-      video.srcObject = null;
+      if (stream) {
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop()); // Stop all tracks
+        video.srcObject = null;
+      }
     }
   });
 </script>
