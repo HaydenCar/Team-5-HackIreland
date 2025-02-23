@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Debug Highlight Page{% endblock %}
+
+{% block content %}
+<div class="container text-center my-3">
+  <h3>Debug Highlight Page</h3>
+  <p>Check your DevTools network tab to ensure the image is actually loading.</p>
+
+  <!-- Tool Buttons -->
+  <div class="mb-3">
+    <button id="highlightToolBtn" class="btn btn-primary me-2">Highlight (Freehand)</button>
+    <button id="rectSelectToolBtn" class="btn btn-secondary">Rect. Select</button>
+  </div>
+
+  <!-- Canvas -->
+  <div style="display: inline-block; border: 1px solid #ccc;">
+    <canvas id="highlightCanvas" width="600" height="400" style="border: 1px solid #000;"></canvas>
+  </div>
+
+  <!-- Finish Button -->
+  <div class="mt-3">
+    <button id="finishBtn" class="btn btn-success">Finish</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.2.4/fabric.min.js"></script>
+<script>
+  const canvas = new fabric.Canvas('highlightCanvas');
+
+  // 1) Use a known placeholder or local path
+  // If this doesn't appear, the path is invalid or blocked.
+  // For local images, ensure they exist in /static/uploads, e.g. "/static/uploads/my_image.jpg"
+  const imageUrl = "/static/image.png";
+  fabric.Image.fromURL(imageUrl, function(img) {
+    img.set({ left: 0, top: 0, selectable: false });
+    canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+  }, { crossOrigin: 'anonymous' });
+
+  // 2) Freehand highlight tool (thicker, semi-transparent)
+  function enableHighlightTool() {
+    canvas.isDrawingMode = true;
+    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+    // Thicker line, bright yellow at 50% opacity
+    canvas.freeDrawingBrush.color = 'rgba(255, 255, 0, 0.5)';
+    canvas.freeDrawingBrush.width = 15;
+    // Remove rectangle events
+    canvas.off('mouse:down');
+    canvas.off('mouse:move');
+    canvas.off('mouse:up');
+    console.log("Freehand highlight tool enabled");
+  }
+
+  // 3) Rectangular select tool (outline only)
+  function enableRectTool() {
+    canvas.isDrawingMode = false;
+    // Remove old events
+    canvas.off('mouse:down');
+    canvas.off('mouse:move');
+    canvas.off('mouse:up');
+
+    let rect, isDown, origX, origY;
+    canvas.on('mouse:down', function(o) {
+      isDown = true;
+      const pointer = canvas.getPointer(o.e);
+      origX = pointer.x;
+      origY = pointer.y;
+      rect = new fabric.Rect({
+        left: origX,
+        top: origY,
+        width: 0,
+        height: 0,
+        fill: 'transparent',
+        stroke: 'blue',
+        strokeWidth: 2,
+        selectable: false,
+      });
+      canvas.add(rect);
+    });
+
+    canvas.on('mouse:move', function(o) {
+      if (!isDown) return;
+      const pointer = canvas.getPointer(o.e);
+      rect.set({
+        width: Math.abs(origX - pointer.x),
+        height: Math.abs(origY - pointer.y)
+      });
+      if (pointer.x < origX) {
+        rect.set({ left: pointer.x });
+      }
+      if (pointer.y < origY) {
+        rect.set({ top: pointer.y });
+      }
+      canvas.renderAll();
+    });
+
+    canvas.on('mouse:up', function() {
+      isDown = false;
+      // Remove events if you only want one rectangle
+      canvas.off('mouse:down');
+      canvas.off('mouse:move');
+      canvas.off('mouse:up');
+    });
+    console.log("Rectangle tool enabled");
+  }
+
+  // Tool Buttons
+  document.getElementById('highlightToolBtn').addEventListener('click', enableHighlightTool);
+  document.getElementById('rectSelectToolBtn').addEventListener('click', enableRectTool);
+
+  // Finish Button
+  document.getElementById('finishBtn').addEventListener('click', () => {
+    const objects = canvas.getObjects();
+    console.log("Objects:", objects);
+    alert("Finish clicked. Check console for objects data.");
+  });
+
+  // Default to highlight tool
+  enableHighlightTool();
+</script>
+{% endblock %}

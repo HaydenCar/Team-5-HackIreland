@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block title %}Notes - HoloNote{% endblock %}
 
 {% block content %}
@@ -8,8 +7,10 @@
   <nav class="glass side-panel">
     <div class="d-flex justify-content-between align-items-center">
       <h4 class="notes-title">Notes</h4>
-      <!-- Plus button that opens the modal -->
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createNoteModal">+</button>
+      <!-- Plus button for creating a new note -->
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createNoteModal">
+        +
+      </button>
     </div>
     <div class="notes-container" id="notesContainer">
       <!-- Notes will be dynamically populated via JavaScript -->
@@ -18,7 +19,19 @@
 
   <!-- MAIN CONTENT PANEL -->
   <main class="glass content-panel">
-    <h2>Note Content</h2>
+    {% if active_note %}
+      <!-- If a note is selected, show its name and the camera button -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">{{ active_note }}</h2>
+        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#cameraModal">
+          <i class="bi bi-camera"></i> Camera
+        </button>
+      </div>
+    {% else %}
+      <!-- Otherwise, just show a default heading -->
+      <h2>Note Content</h2>
+    {% endif %}
+    
     <div id="noteContent">
       {% if note_content %}
         {{ note_content|safe }}
@@ -47,6 +60,42 @@
     </div>
   </div>
 </div>
+
+<!-- Camera / Upload Image Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="cameraForm" method="POST" action="{{ url_for('upload_temp') }}" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cameraModalLabel">Upload an Image</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Hidden input for note ID -->
+          <input type="hidden" name="noteID" value="{{ active_note_id }}">
+          <!-- Input for capturing an image or selecting from gallery -->
+          <input 
+            type="file"
+            name="image"
+            id="cameraInput"
+            class="form-control"
+            accept="image/*"
+            capture="environment" 
+            required
+          >
+          <p class="mt-2 small text-muted">
+            On mobile, you can take a photo directly. On desktop, this will open the file picker.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Upload</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}

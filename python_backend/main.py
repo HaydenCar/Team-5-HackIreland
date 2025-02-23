@@ -1,33 +1,33 @@
 from flask import *
 from flask_login import LoginManager, current_user, UserMixin, login_user, logout_user, login_required
-
 from dotenv import load_dotenv
 import bcrypt
-
 import os
 import boto3
+import base64
+import io
+import markdown
+from io import BytesIO
+from werkzeug.utils import secure_filename  # needed for upload_temp
+import tempfile  # for getting a reliable temp directory
+import openai  # ensure openai is imported
 
-
+# Load environment variables
 load_dotenv(override=True)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_API_PROJECT_ID = os.getenv("OPENAI_API_PROJECT_ID")
-
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_REGION = os.getenv("AWS_REGION")
 BUCKET_NAME = os.getenv("BUCKET_NAME")
-
 FLASK_LOGIN_SECRET = os.getenv("FLASK_LOGIN_SECRET")
 DYNAMODB_TABLE_NAME = "UserNotes"
 
 from pythonFunctions import *
-import markdown
+# (Assuming createNewParsedImageChat, upload_file, download_file, delete_file, getDirectoryFiles, etc. are defined)
 
-from io import BytesIO
-
-imageCache={}
-markdownCache={}
-
+imageCache = {}
+markdownCache = {}
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = FLASK_LOGIN_SECRET
@@ -44,8 +44,6 @@ dynamodb = boto3.resource(
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
 )
 user_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
-
-
 
 # User Model for Flask-Login
 class User(UserMixin):
@@ -75,8 +73,7 @@ def check_password(password, hashed):
 def register():
     if request.method == "POST":
         email = request.form["email"]
-
-        if(user_table.get_item(Key={"email": email}).get("Item")):
+        if user_table.get_item(Key={"email": email}).get("Item"):
             return """
             <p>Error: Email already exists</p>
             <a class="btn btn-primary" href="/login" role="button">Log in</a>
@@ -84,43 +81,32 @@ def register():
             """
         else:
             password = request.form["password"]
-            # Hash Password
             password_hash = hash_password(password)
-            # Store in DynamoDB
-            registerAttempt=user_table.put_item(Item={"email": email, "password_hash": password_hash})
-
+            user_table.put_item(Item={"email": email, "password_hash": password_hash})
             return """
             <p>Account created successfully! Please log in.</p>
             <a class="btn btn-primary" href="/login" role="button">Log in</a>
             """
-
     return render_template("register.html")
 
 # User Login Route
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    global imageCache
-    imageCache={}
-    global markdownCache
-    markdownCache={}
+    global imageCache, markdownCache
+    imageCache = {}
+    markdownCache = {}
     if request.method == "POST":
         email = request.form["email"]
         password = request.form["password"]
-
-        # Fetch user details from DynamoDB
         response = user_table.get_item(Key={"email": email})
         user_data = response.get("Item")
-
-        # Check if user exists and verify the password
         if user_data and check_password(password, user_data["password_hash"]):
             user = User(email=user_data["email"])
             login_user(user)
             return redirect("/")
         else:
-            return("Invalid email or password")
-
+            return "Invalid email or password"
     return render_template("login.html")
-
 
 # Dashboard Route (Protected)
 @app.route("/dashboard")
@@ -132,66 +118,54 @@ def dashboard():
 @app.route("/logout")
 @login_required
 def logout():
-    global imageCache
-    imageCache={}
-    global markdownCache
-    markdownCache={}
+    global imageCache, markdownCache
+    imageCache = {}
+    markdownCache = {}
     logout_user()
     flash("You have been logged out.", "success")
     return redirect(url_for("login"))
 
-
 OpenAIClient = openai.OpenAI(
-  organization='org-9TmA6PyMH2ZihJtThj58RMZT',
-  project=OPENAI_API_PROJECT_ID,
+    organization='org-9TmA6PyMH2ZihJtThj58RMZT',
+    project=OPENAI_API_PROJECT_ID,
 )
 
-s3_client = boto3.client('s3',
-                         aws_access_key_id=AWS_ACCESS_KEY_ID,
-                         aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                         region_name=AWS_REGION)
-
-
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    region_name=AWS_REGION
+)
 
 @app.route("/")
 @login_required
 def home():
-    return render_template("/index.html")
+    return render_template("index.html")
 
 @app.route("/AR")
 def AR():
-    return render_template("/AR.html")
+    return render_template("AR.html")
 
 @app.route("/notes")
 def notes():
-    return render_template("/notes.html")
-
-
-import base64
-import io
-from flask import request, jsonify
-from flask_login import login_required, current_user
+    return render_template("notes.html")
 
 @app.route("/uploadImageQueryForparsing", methods=["POST"])
 @login_required
 def uploadImageQueryForparsing():
     user_email = current_user.id
     markdown_id = request.values.get("markdownID")
-
     if not markdown_id:
         return jsonify({"error": "Markdown ID is required"}), 400
 
-    # Handle file-based image upload
     if "image" in request.files:
         image = request.files["image"]
         image_format = "jpg"
         image_bytes = image.read()
-    
-    # Handle base64 image upload (from VR passthrough)
     elif "image_base64" in request.form:
         image_data = request.form["image_base64"]
         try:
-            image_data = image_data.split(",")[1]  # Remove metadata
+            image_data = image_data.split(",")[1]
             image_bytes = base64.b64decode(image_data)
             image_format = "jpg"
         except Exception as e:
@@ -199,20 +173,15 @@ def uploadImageQueryForparsing():
     else:
         return jsonify({"error": "No image provided"}), 400
 
-    # Generate markdown from the image
     image_io = io.BytesIO(image_bytes)
     markdownResponse = createNewParsedImageChat(OpenAIClient, image_io)
 
-    # Store markdown in cache using `user_email` as key
     markdown_key = f"{user_email}/markDowns/{markdown_id}.md"
     markdownCache[markdown_key] = markdownResponse
     upload_file(markdown_key, markdownResponse, s3_client, BUCKET_NAME)
 
-    # Upload the image
     image_key = f"{user_email}/images/{markdown_id}.{image_format}"
     upload_file(image_key, image_bytes, s3_client, BUCKET_NAME)
-
-    # Store in cache for fast retrieval
     imageCache[image_key] = image_bytes
 
     return jsonify({
@@ -221,61 +190,53 @@ def uploadImageQueryForparsing():
         "image_url": f"https://{BUCKET_NAME}.s3.amazonaws.com/{image_key}"
     })
 
-
-    
 @app.route("/downloadMarkdown", methods=["GET"])
 @login_required
 def downloadMarkdown():
     user_email = current_user.id
     markdown_id = request.args.get("markdownID")
-
     if not markdown_id:
         return jsonify({"error": "Markdown ID is required"}), 400
-
     markdown_key = f"{user_email}/markDowns/{markdown_id}.md"
-
     if markdown_key not in markdownCache:
         markdownResponse = download_file(markdown_key, s3_client, BUCKET_NAME)
         if markdownResponse:
             markdownCache[markdown_key] = markdownResponse
         else:
             return "Markdown not found", 404
-
     return markdown.markdown(markdownCache[markdown_key])
-
 
 @app.route("/downloadImage", methods=["GET"])
 @login_required
 def downloadImage():
-    if(request.args['imageID'] not in imageCache):
-        user_email=current_user.id
-        filename = user_email+"/"+"images/"+request.args['imageID']+".jpg"
-        imageResponse =  download_file(filename,s3_client,BUCKET_NAME)
-        if(imageResponse != None):
+    if request.args['imageID'] not in imageCache:
+        user_email = current_user.id
+        filename = f"{user_email}/images/{request.args['imageID']}.jpg"
+        imageResponse = download_file(filename, s3_client, BUCKET_NAME)
+        if imageResponse is not None:
             imageCache[request.args['imageID']] = imageResponse
-            return """
-            <img src="data:image/jpeg;base64,{}" style="width: auto; height: 100%;" />
-            """.format(base64.b64encode(imageResponse).decode("utf-8"),)
+            return f"""
+            <img src="data:image/jpeg;base64,{base64.b64encode(imageResponse).decode('utf-8')}" style="width: auto; height: 100%;" />
+            """
         else:
             return "Image not found"
     else:
-        return """
-        <img src="data:image/jpeg;base64,{}" style="width: auto; height: 100%;" />
-        """.format(base64.b64encode(imageCache[request.args['imageID']]).decode("utf-8"),)
+        return f"""
+        <img src="data:image/jpeg;base64,{base64.b64encode(imageCache[request.args['imageID']]).decode('utf-8')}" style="width: auto; height: 100%;" />
+        """
 
 @app.route("/deleteImageAndMarkdown", methods=["POST"])
 @login_required
 def deleteImageAndMarkdown():
-    user_email=current_user.id
-    if(request.form["dataID"] in imageCache):
+    user_email = current_user.id
+    if request.form["dataID"] in imageCache:
         del imageCache[request.form["dataID"]]
         del markdownCache[request.args['markdownID']]
-    imageName = user_email+"/"+"images/"+request.form["dataID"]+".jpg"
-
-    markDownName = user_email+"/"+"markDowns/"+request.form["dataID"]+".md"
-    imageResponse=delete_file(imageName,s3_client,BUCKET_NAME)
-    markDownResponse=delete_file(markDownName,s3_client,BUCKET_NAME)
-    if(imageResponse and markDownResponse):
+    imageName = f"{user_email}/images/{request.form['dataID']}.jpg"
+    markDownName = f"{user_email}/markDowns/{request.form['dataID']}.md"
+    imageResponse = delete_file(imageName, s3_client, BUCKET_NAME)
+    markDownResponse = delete_file(markDownName, s3_client, BUCKET_NAME)
+    if imageResponse and markDownResponse:
         return "Deleted"
     else:
         return "Failed"
@@ -286,10 +247,8 @@ def getAllData():
     user_email = current_user.id
     user_markdowns = getDirectoryFiles(f"{user_email}/markDowns", s3_client, BUCKET_NAME)
     user_images = getDirectoryFiles(f"{user_email}/images", s3_client, BUCKET_NAME)
-
     markdown_list = [key.split("/")[-1] for key in user_markdowns]
     image_list = [key.split("/")[-1] for key in user_images]
-
     return jsonify({
         "cached_markdowns": list(markdownCache.keys()),
         "online_markdowns": markdown_list,
@@ -297,35 +256,28 @@ def getAllData():
         "online_images": image_list
     })
 
-
 @app.route("/getOnlineMarkdown", methods=["GET"])
 @login_required
 def get_online_markdown():
-    user_email = current_user.id  # current user's email
+    user_email = current_user.id
     prefix = f"{user_email}/markDowns/"
-    
-    # Retrieve files under the current user's markdown folder.
     files = getDirectoryFiles(prefix, s3_client, BUCKET_NAME)
-    
-    # Remove the prefix and the ".md" suffix from each key.
     online_markdowns = [ key[len(prefix):-3] for key in files ]
-    
     return jsonify(online_markdowns)
 
-
 @app.route("/notes/<note_id>")
+@login_required
 def show_note(note_id):
-    # Convert underscores back to spaces if needed
-    # (Assuming your S3 keys use spaces, e.g., "Page 6")
     note_name = note_id.replace("_", " ")
-    filename = "markDowns/" + note_name + ".md"
-    md_content = download_file(filename, s3_client, BUCKET_NAME)
+    user_email = current_user.id
+    s3_key = f"{user_email}/markDowns/{note_name.replace(' ', '_')}.md"
+    md_content = download_file(s3_key, s3_client, BUCKET_NAME)
     if md_content:
         html_content = markdown.markdown(md_content)
     else:
         html_content = "<p>Markdown not found</p>"
-    # Render the same notes.html template, passing the content
-    return render_template("notes.html", note_content=html_content, active_note=note_name)
+    # Pass the note_id as active_note_id for use in the modal
+    return render_template("notes.html", note_content=html_content, active_note=note_name, active_note_id=note_id)
 
 
 @app.route("/createNote", methods=["POST"])
@@ -335,25 +287,50 @@ def create_note():
     note_name = data.get("note_name")
     if not note_name:
         return jsonify({"success": False, "error": "No note name provided."})
-    
-    user_email = current_user.id  # current user's email
-    # Sanitize the note name: trim whitespace and replace spaces with underscores.
+    user_email = current_user.id
     sanitized_name = note_name.strip().replace(" ", "_")
-    
-    # Define the initial content for the markdown note
     initial_content = f"# {note_name}\n\n"
-    
-    # Build the S3 key using the user folder, the markdown folder, and the sanitized note name.
     s3_key = f"{user_email}/markDowns/{sanitized_name}.md"
-    
     try:
         s3_client.put_object(Bucket=BUCKET_NAME, Key=s3_key, Body=initial_content)
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-    
     return jsonify({"success": True, "note_name": note_name})
 
+@app.route("/uploadTemp", methods=["POST"])
+@login_required
+def upload_temp():
+    image_file = request.files.get("image")
+    note_id = request.form.get("noteID")
+    if not image_file or not note_id:
+        flash("Image or Note ID is missing", "error")
+        return redirect(url_for("home"))
+    
+    # Use the OS temporary directory
+    temp_dir = tempfile.gettempdir()
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+    filename = secure_filename(image_file.filename)
+    temp_path = os.path.join(temp_dir, filename)
+    image_file.save(temp_path)
+    flash("Image uploaded to temp folder!", "success")
+    
+    # Redirect to the highlight page using the saved filename as the image ID
+    return redirect(url_for("highlight", imageID=filename, noteID=note_id))
 
+
+# NEW: Highlight endpoint
+@app.route("/highlight")
+@login_required
+def highlight():
+    image_id = request.args.get("imageID")
+    note_id = request.args.get("noteID")
+    if not image_id or not note_id:
+        flash("Image ID and Note ID are required", "error")
+        return redirect(url_for("notes"))
+    user_email = current_user.id
+    image_url = f"https://{BUCKET_NAME}.s3.amazonaws.com/{user_email}/images/{image_id}.jpg"
+    return render_template("highlight.html", image_url=image_url, image_id=image_id, note_id=note_id)
 
 if __name__ == "__main__":
-        app.run(host="0.0.0.0", port=5000,debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
