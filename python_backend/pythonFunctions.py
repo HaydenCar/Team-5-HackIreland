@@ -3,6 +3,8 @@ from flask import request, Flask, render_template, jsonify
 from botocore.exceptions import ClientError
 import base64
 import io
+import mimetypes
+
 def createNewTextChat(client,chatRequest):
     output=""
     stream = client.chat.completions.create(
@@ -63,26 +65,28 @@ def createNewParsedImageChat(client, image_file):
     return response.choices[0].message.content
 
 def upload_file(filename, fileContent, s3_client, BUCKET_NAME):
-    if filename.endswith('.md'):
-        # Upload markdown file (expects a string, so we encode it)
-        print(s3_client.put_object(
-            Body=io.BytesIO(fileContent.encode('utf-8')),
-            Bucket=BUCKET_NAME,
-            Key=filename,
-            ContentType='text/markdown'
-        ))
-        return jsonify({'message': 'File uploaded successfully'}), 200
-    if filename.endswith('.jpg'):
-        # Upload image file (expects bytes, no need to encode)
-        print(s3_client.put_object(
-            Body=io.BytesIO(fileContent),
-            Bucket=BUCKET_NAME,
-            Key=filename,
-            ContentType='image/jpg'
-        ))
-        return jsonify({'message': 'File uploaded successfully'}), 200
+    try:
+        # Guess MIME type automatically
+        content_type, _ = mimetypes.guess_type(filename)
+        if not content_type:
+            content_type = "application/octet-stream"
 
-    return jsonify({'error': 'Incompatible file type'}), 400
+        # Convert markdown text to bytes
+        if filename.endswith('.md'):
+            fileContent = fileContent.encode('utf-8')
+
+        # Upload to S3
+        s3_client.put_object(
+            Body=fileContent,
+            Bucket=BUCKET_NAME,
+            Key=filename,
+            ContentType=content_type
+        )
+
+        return {"message": f"File '{filename}' uploaded successfully", "status": "success"}
+    
+    except Exception as e:
+        return {"error": str(e), "status": "failed"}
 
     
 def download_file(filename, s3_client, BUCKET_NAME):

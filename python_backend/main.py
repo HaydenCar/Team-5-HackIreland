@@ -158,55 +158,91 @@ s3_client = boto3.client('s3',
 def home():
     return render_template("/index.html")
 
+@app.route("/AR")
+def AR():
+    return render_template("/AR.html")
+
 @app.route("/notes")
 def notes():
     return render_template("/notes.html")
 
 
+import base64
+import io
+from flask import request, jsonify
+from flask_login import login_required, current_user
+
 @app.route("/uploadImageQueryForparsing", methods=["POST"])
 @login_required
 def uploadImageQueryForparsing():
-    image = request.files["image"]
-    id = request.values["markdownID"]
-    user_email=current_user.id
+    user_email = current_user.id
+    markdown_id = request.values.get("markdownID")
+
+    if not markdown_id:
+        return jsonify({"error": "Markdown ID is required"}), 400
+
+    # Handle file-based image upload
+    if "image" in request.files:
+        image = request.files["image"]
+        image_format = "jpg"
+        image_bytes = image.read()
     
+    # Handle base64 image upload (from VR passthrough)
+    elif "image_base64" in request.form:
+        image_data = request.form["image_base64"]
+        try:
+            image_data = image_data.split(",")[1]  # Remove metadata
+            image_bytes = base64.b64decode(image_data)
+            image_format = "jpg"
+        except Exception as e:
+            return jsonify({"error": f"Invalid base64 format: {str(e)}"}), 400
+    else:
+        return jsonify({"error": "No image provided"}), 400
+
     # Generate markdown from the image
-    markdownResponse = createNewParsedImageChat(OpenAIClient, image)
-    
-    # Upload the markdown file (expects a string)
-    markdownCache[id] = markdownResponse
-    upload_file(user_email+"/"+"markDowns/" + id + ".md", markdownResponse, s3_client, BUCKET_NAME)
-    
-    # Upload the image file (use a proper image extension and pass bytes)
-    # Reset the stream pointer to the beginning if needed.
-    image.seek(0)
-    imageCache[id] = image.read()
-    image.seek(0)
-    upload_file(user_email+"/"+"images/" + id + ".jpg", image.read(), s3_client, BUCKET_NAME)
-    
-    # Convert markdown to HTML and return
-    htmlForm = markdown.markdown(markdownResponse)
-    print(htmlForm)
-    print(id)
-    return htmlForm
+    image_io = io.BytesIO(image_bytes)
+    markdownResponse = createNewParsedImageChat(OpenAIClient, image_io)
+
+    # Store markdown in cache using `user_email` as key
+    markdown_key = f"{user_email}/markDowns/{markdown_id}.md"
+    markdownCache[markdown_key] = markdownResponse
+    upload_file(markdown_key, markdownResponse, s3_client, BUCKET_NAME)
+
+    # Upload the image
+    image_key = f"{user_email}/images/{markdown_id}.{image_format}"
+    upload_file(image_key, image_bytes, s3_client, BUCKET_NAME)
+
+    # Store in cache for fast retrieval
+    imageCache[image_key] = image_bytes
+
+    return jsonify({
+        "message": "VR image uploaded successfully",
+        "markdown_url": f"https://{BUCKET_NAME}.s3.amazonaws.com/{markdown_key}",
+        "image_url": f"https://{BUCKET_NAME}.s3.amazonaws.com/{image_key}"
+    })
+
+
     
 @app.route("/downloadMarkdown", methods=["GET"])
 @login_required
 def downloadMarkdown():
-    user_email=current_user.id
-    if(request.args['markdownID'] not in markdownCache):
-        filename = user_email+"/"+"markDowns/"+request.args['markdownID']+".md"
-        markdownResponse =  download_file(filename,s3_client,BUCKET_NAME)
-        if(markdownResponse != None):
-            htmlForm = markdown.markdown(markdownResponse)
-            markdownCache[request.args['markdownID']] = markdownResponse
-            print(htmlForm)
-            print(id)
-            return(htmlForm)
+    user_email = current_user.id
+    markdown_id = request.args.get("markdownID")
+
+    if not markdown_id:
+        return jsonify({"error": "Markdown ID is required"}), 400
+
+    markdown_key = f"{user_email}/markDowns/{markdown_id}.md"
+
+    if markdown_key not in markdownCache:
+        markdownResponse = download_file(markdown_key, s3_client, BUCKET_NAME)
+        if markdownResponse:
+            markdownCache[markdown_key] = markdownResponse
         else:
-            return "Markdown not found"
-    else:
-        return(markdown.markdown((markdownCache[request.args['markdownID']])))
+            return "Markdown not found", 404
+
+    return markdown.markdown(markdownCache[markdown_key])
+
 
 @app.route("/downloadImage", methods=["GET"])
 @login_required
@@ -247,39 +283,20 @@ def deleteImageAndMarkdown():
 @app.route("/getAllData", methods=["GET"])
 @login_required
 def getAllData():
-    user_email=current_user.id
-    onlineMarkdowns=[key.split("/")[2] for key in getDirectoryFiles(user_email+"/"+"markDowns",s3_client,BUCKET_NAME)]
-    onlineImages=[key.split("/")[2] for key in getDirectoryFiles(user_email+"/"+"images",s3_client,BUCKET_NAME)]
-    return """
-    <html>
-    <head>
-        <title>All Data</title>
-    </head>
-    <body>
-        <h1>Cached Markdown</h1>
-        <ul>
-    {}
-        </ul>
-        <h1>Online Markdown</h1>
-        <ul>
-    {}
-        </ul>
-        <h1>Cached Images</h1>
-        <ul>
-    {}
-        </ul>
-        <h1>Online Images</h1>
-        <ul>
-    {}
-        </ul>
-    </body>
-    </html>
-    """.format(
-        "\n".join("<li>{}</li>".format(key) for key in markdownCache),
-        "\n".join("<li>{}</li>".format(key) for key in onlineMarkdowns if key not in [key+".md" for key in markdownCache]),
-        "\n".join("<li>{}</li>".format(key) for key in imageCache),
-        "\n".join("<li>{}</li>".format(key) for key in onlineImages if key not in [key+".jpg" for key in imageCache]),
-    )
+    user_email = current_user.id
+    user_markdowns = getDirectoryFiles(f"{user_email}/markDowns", s3_client, BUCKET_NAME)
+    user_images = getDirectoryFiles(f"{user_email}/images", s3_client, BUCKET_NAME)
+
+    markdown_list = [key.split("/")[-1] for key in user_markdowns]
+    image_list = [key.split("/")[-1] for key in user_images]
+
+    return jsonify({
+        "cached_markdowns": list(markdownCache.keys()),
+        "online_markdowns": markdown_list,
+        "cached_images": list(imageCache.keys()),
+        "online_images": image_list
+    })
+
 
 @app.route("/getOnlineMarkdown", methods=["GET"])
 @login_required
