@@ -340,5 +340,5 @@ if __name__ == "__main__":
         print(" * ngrok tunnel available at:", public_url)
     except ImportError:
         print(" * pyngrok is not installed. To install, run 'pip install pyngrok'")
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5008, debug=False)
 

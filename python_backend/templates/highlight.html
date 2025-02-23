@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-  Canvas Page
+Canvas Page
 {% endblock %}
 
 {% block head %}
@@ -12,15 +12,19 @@
   .canvas-wrapper {
     display: flex;
     justify-content: center;
-    padding: 20px; /* Adds some spacing around the canvas */
+    padding: 20px;
+    /* Adds some spacing around the canvas */
   }
 
   .canvas-container {
     width: 100%;
-    max-width: 300px; /* Mobile max size */
-    aspect-ratio: 1 / 1; /* Keeps it square */
+    max-width: 300px;
+    /* Mobile max size */
+    aspect-ratio: 1 / 1;
+    /* Keeps it square */
     border: 1px solid #ccc;
-    background-color: black; /* Fills unused space */
+    background-color: black;
+    /* Fills unused space */
     position: relative;
     overflow: hidden;
   }
@@ -28,7 +32,8 @@
   /* Scale up on larger desktops */
   @media (min-width: 992px) {
     .canvas-container {
-      max-width: 1000px; /* or up to 1200px, your choice */
+      max-width: 1000px;
+      /* or up to 1200px, your choice */
     }
   }
 
@@ -79,7 +84,7 @@
 <!-- Fabric.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.2.4/fabric.min.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
     const canvasEl = document.getElementById("highlightCanvas");
     const container = document.querySelector(".canvas-container");
     const canvas = new fabric.Canvas("highlightCanvas");
@@ -95,7 +100,7 @@
 
     function loadBackgroundImage() {
       const imageUrl = "/static/image.png"; // Use correct path
-      fabric.Image.fromURL(imageUrl, function(img) {
+      fabric.Image.fromURL(imageUrl, function (img) {
         const scaleFactor = Math.min(canvas.width / img.width, canvas.height / img.height);
         img.scale(scaleFactor);
         img.set({
@@ -127,7 +132,7 @@
 
       let rect, isDown, origX, origY;
 
-      canvas.on("mouse:down", function(o) {
+      canvas.on("mouse:down", function (o) {
         isDown = true;
         const pointer = canvas.getPointer(o.e);
         origX = pointer.x;
@@ -145,7 +150,7 @@
         canvas.add(rect);
       });
 
-      canvas.on("mouse:move", function(o) {
+      canvas.on("mouse:move", function (o) {
         if (!isDown) return;
         const pointer = canvas.getPointer(o.e);
         rect.set({
@@ -157,7 +162,7 @@
         canvas.renderAll();
       });
 
-      canvas.on("mouse:up", function() {
+      canvas.on("mouse:up", function () {
         isDown = false;
         // If you want to allow multiple rectangles, remove these unbinds:
         canvas.off("mouse:down");
@@ -171,7 +176,7 @@
     document.getElementById("highlightToolBtn").addEventListener("click", enableHighlightTool);
     document.getElementById("rectSelectToolBtn").addEventListener("click", enableRectTool);
 
-    document.getElementById("finishBtn").addEventListener("click", function() {
+    document.getElementById("finishBtn").addEventListener("click", function () {
       const objects = canvas.getObjects();
       console.log("Canvas objects:", objects);
       alert("Finish clicked. Check console for objects data.");
