@@ -420,30 +420,42 @@ def upload_highlighted_image():
 
 def call_openai_for_extracted_text(openai_client, extracted_text):
     """
-    Example function that calls OpenAI to handle or transform
-    the text from the highlighted areas. Adjust the model/prompt
-    for your actual usage.
+    Calls OpenAI to transform the extracted text into concise markdown.
+    It outputs valid Markdown with headings, bold text, and bullet points.
     """
-    import openai
+    import openai  # Ensure openai is installed
 
     if not extracted_text.strip():
         return ""
 
-    prompt = (
-        "The user extracted the following lines from a highlighted image:\n\n"
-        f"{extracted_text}\n\n"
-        "Please reformat or tidy this text in markdown, focusing only on essential content.\n"
-        "Return only valid markdown."
+    system_instructions = (
+        "You are an AI that outputs only valid Markdown in a single text block.\n"
+        "- Start with a single H1 heading (#) for the main title.\n"
+        "- Then use bullet points or sub-headings (##) for details.\n"
+        "- Keep it concise, around 100 words max.\n"
+        "- Use **bold** for emphasis if needed.\n"
+        "- Do not output anything except the final Markdown."
     )
 
-    response = openai_client.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
+    user_prompt = (
+        f"Here are some extracted lines from the image:\n\n"
+        f"{extracted_text}\n\n"
+        "Combine them into a concise markdown note."
+    )
+
+    response = openai_client.chat.completions.create(
+        model="gpt-3.5-turbo",  # or 'gpt-4o-mini', etc.
+        messages=[
+            {"role": "system", "content": system_instructions},
+            {"role": "user", "content": user_prompt},
+        ],
         max_tokens=300,
         temperature=0.7,
     )
-    new_md = response.choices[0].message["content"]
+
+    new_md = response.choices[0].message.content
     return new_md
+
 
 
 
