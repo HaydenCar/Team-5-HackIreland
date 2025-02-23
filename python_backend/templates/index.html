@@ -30,6 +30,19 @@
             <button type="submit" class="btn btn-primary">Upload Image and name</button>
         </form>
     </div>
+
+    <div class="container text-center mt-5">
+        <form action="/deleteImageAndMarkdown" method="post">
+            <input type="text" name="dataID" required>
+            <button type="submit" class="btn btn-primary">Delete image and markdown</button>
+        </form>
+    </div>
+
+    <div class = "container text-center mt-5">
+        <form action="/getAllData" method="get">
+            <button type="submit" class="btn btn-primary">Get all data</button>
+        </form>
+    </div>
 </body>
 </html>
 

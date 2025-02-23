@@ -106,6 +106,55 @@ def downloadImage():
         <img src="data:image/jpeg;base64,{}" style="width: auto; height: 100%;" />
         """.format(base64.b64encode(imageCache[request.args['imageID']]).decode("utf-8"),)
 
+@app.route("/deleteImageAndMarkdown", methods=["POST"])
+def deleteImageAndMarkdown():
+    if(request.form["dataID"] in imageCache):
+        del imageCache[request.form["dataID"]]
+        del markdownCache[request.args['markdownID']]
+    imageName = "images/"+request.form["dataID"]+".jpg"
+
+    markDownName = "markDowns/"+request.form["dataID"]+".md"
+    imageResponse=delete_file(imageName,s3_client,BUCKET_NAME)
+    markDownResponse=delete_file(markDownName,s3_client,BUCKET_NAME)
+    if(imageResponse and markDownResponse):
+        return "Deleted"
+    else:
+        return "Failed"
+
+@app.route("/getAllData", methods=["GET"])
+def getAllData():
+    onlineMarkdowns=[name[10:-3] for name in getDirectoryFiles("markDowns",s3_client,BUCKET_NAME)]
+    onlineImages=[name[7:-4] for name in getDirectoryFiles("images",s3_client,BUCKET_NAME)]
+    return """
+    <html>
+    <head>
+        <title>All Data</title>
+    </head>
+    <body>
+        <h1>Cached Markdown</h1>
+        <ul>
+    {}
+        </ul>
+        <h1>Online Markdown</h1>
+        <ul>
+    {}
+        </ul>
+        <h1>Cached Images</h1>
+        <ul>
+    {}
+        </ul>
+        <h1>Online Images</h1>
+        <ul>
+    {}
+        </ul>
+    </body>
+    </html>
+    """.format(
+        "\n".join("<li>{}</li>".format(key) for key in markdownCache),
+        "\n".join("<li>{}</li>".format(key) for key in onlineMarkdowns if key not in markdownCache),
+        "\n".join("<li>{}</li>".format(key) for key in imageCache),
+        "\n".join("<li>{}</li>".format(key) for key in onlineImages if key not in imageCache),
+    )
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000,debug=True)
+        app.run(host="0.0.0.0", port=5000,debug=True)
