@@ -120,6 +120,8 @@ def check_file_existence(filename, s3_client, BUCKET_NAME):
 
 def getDirectoryFiles(directory, s3_client, BUCKET_NAME):
     files = []
-    for file in s3_client.list_objects(Bucket=BUCKET_NAME, Prefix=directory)['Contents']:
-        files.append(file['Key'])
+    repsonse=s3_client.list_objects(Bucket=BUCKET_NAME, Prefix=directory)
+    if("Contents" in repsonse):
+        for file in repsonse["Contents"]:
+            files.append(file['Key'])
     return files

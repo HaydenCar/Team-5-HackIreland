@@ -1,6 +1,8 @@
 OpenAI
 Flask
+flask_login
 markdown
 boto3
 python-dotenv
 gunicorn
+bcrypt
