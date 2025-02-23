@@ -26,13 +26,13 @@
   <div class="container mt-5">
     <h1 class="card-title text-center mb-4"><%= book_name %></h1>
     <div class="book-grid">
-      <% notes.each do |filename, note| %>
+      <% notes.each do |note| %>
         <div class="book-card">
-          <img src="/uploads/<%= filename %>" alt="Note Image">
+          <img src="/uploads/<%= note['filename'] %>" alt="Note Image">
           <div class="book-card-body">
-            <h3 class="book-card-title"><%= note[:name] %></h3>
+            <h3 class="book-card-title"><%= note['note_name'] %></h3>
             <div class="markdown-content">
-              <%= note[:text] %>
+              <%= note['text'] %>
             </div>
           </div>
         </div>

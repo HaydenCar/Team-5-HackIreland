@@ -3,6 +3,7 @@ require 'sinatra/reloader' if development?
 require 'rtesseract'
 require 'dotenv/load'
 require 'redcarpet'
+require 'mongo'
 
 # Enable static files in the public folder
 set :public_folder, File.dirname(__FILE__) + '/public'
@@ -10,8 +11,11 @@ set :public_folder, File.dirname(__FILE__) + '/public'
 # Initialize Markdown renderer
 markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML, autolink: true, tables: true)
 
-# Initialize a hash to store books
-$books = {}
+# Set up MongoDB connection
+Mongo::Logger.logger.level = ::Logger::WARN
+# Use the MONGODB_URI environment variable and specify a database name (e.g., 'notes_app')
+client = Mongo::Client.new(ENV['MONGODB_URI'], database: 'notes_app')
+notes_collection = client[:notes]
 
 get '/' do
   erb :index
@@ -44,27 +48,30 @@ post '/upload' do
 end
 
 post '/save_note' do
-  book_name = params[:book_name]
-  filename = params[:filename]
-  note_name = params[:note_name]
-  text = params[:text]
+  note = {
+    book_name: params[:book_name],
+    filename: params[:filename],
+    note_name: params[:note_name],
+    text: params[:text],
+    created_at: Time.now
+  }
 
-  # Initialize the book if it doesn't exist
-  $books[book_name] ||= {}
+  # Insert the note into MongoDB
+  notes_collection.insert_one(note)
 
-  # Save the note to the book with its name and text
-  $books[book_name][filename] = { name: note_name, text: text }
-
-  redirect "/book/#{book_name}"
+  redirect "/book/#{params[:book_name]}"
 end
 
 get '/books' do
-  erb :books, locals: { books: $books }
+  # Get a distinct list of book names from the collection
+  book_names = notes_collection.distinct("book_name")
+  erb :books, locals: { books: book_names }
 end
 
 get '/book/:book_name' do
   book_name = params[:book_name]
-  book_notes = $books[book_name] || {}
+  # Find all notes associated with the given book name
+  book_notes = notes_collection.find({ book_name: book_name }).to_a
 
   erb :book, locals: { book_name: book_name, notes: book_notes }
 end
