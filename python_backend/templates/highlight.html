@@ -208,6 +208,7 @@ Canvas Page
     })
     .then(response => response.json())
     .then(data => {
+      alert("Your highlighted image was uploaded to S3!");
       if (data.error) {
         console.error("Error uploading:", data.error);
       } else {
