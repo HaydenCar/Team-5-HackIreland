@@ -299,10 +299,19 @@ def getAllData():
 
 
 @app.route("/getOnlineMarkdown", methods=["GET"])
+@login_required
 def get_online_markdown():
-    # Get file keys from the S3 bucket, then remove the prefix "markDowns/" and the ".md" suffix.
-    online_markdowns = [ key[len("markDowns/"):-3] for key in getDirectoryFiles("markDowns", s3_client, BUCKET_NAME) ]
+    user_email = current_user.id  # current user's email
+    prefix = f"{user_email}/markDowns/"
+    
+    # Retrieve files under the current user's markdown folder.
+    files = getDirectoryFiles(prefix, s3_client, BUCKET_NAME)
+    
+    # Remove the prefix and the ".md" suffix from each key.
+    online_markdowns = [ key[len(prefix):-3] for key in files ]
+    
     return jsonify(online_markdowns)
+
 
 @app.route("/notes/<note_id>")
 def show_note(note_id):
@@ -317,6 +326,33 @@ def show_note(note_id):
         html_content = "<p>Markdown not found</p>"
     # Render the same notes.html template, passing the content
     return render_template("notes.html", note_content=html_content, active_note=note_name)
+
+
+@app.route("/createNote", methods=["POST"])
+@login_required
+def create_note():
+    data = request.get_json()
+    note_name = data.get("note_name")
+    if not note_name:
+        return jsonify({"success": False, "error": "No note name provided."})
+    
+    user_email = current_user.id  # current user's email
+    # Sanitize the note name: trim whitespace and replace spaces with underscores.
+    sanitized_name = note_name.strip().replace(" ", "_")
+    
+    # Define the initial content for the markdown note
+    initial_content = f"# {note_name}\n\n"
+    
+    # Build the S3 key using the user folder, the markdown folder, and the sanitized note name.
+    s3_key = f"{user_email}/markDowns/{sanitized_name}.md"
+    
+    try:
+        s3_client.put_object(Bucket=BUCKET_NAME, Key=s3_key, Body=initial_content)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+    
+    return jsonify({"success": True, "note_name": note_name})
+
 
 
 if __name__ == "__main__":
