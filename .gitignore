@@ -95,3 +95,9 @@ out/
 
 .venv/
 /python_backend/.env
+.env
+# Ignore the uploads folder inside public
+public/uploads/
+
+# Ignore the virtual environment folder
+venv/

@@ -15,6 +15,10 @@ run/main_scene="res://MainScene.tscn"
 config/features=PackedStringArray("4.3", "Mobile")
 config/icon="res://icon.svg"
 
+[autoload]
+
+WebView="*res://android/plugins/webview.gd"
+
 [rendering]
 
 renderer/rendering_method="mobile"

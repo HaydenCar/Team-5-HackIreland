@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://dh6r33io2matj"]
+[gd_scene load_steps=5 format=3 uid="uid://dh6r33io2matj"]
 
 [ext_resource type="Script" path="res://main_scene.gd" id="1_er8ax"]
 
@@ -6,11 +6,13 @@
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cw6fd"]
 
+[sub_resource type="SphereMesh" id="SphereMesh_fp48l"]
+
 [node name="XROrigin3D" type="XROrigin3D"]
 script = ExtResource("1_er8ax")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.380708, -0.34242, -2.82899)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.380708, 1.77926, -2.82899)
 mesh = SubResource("BoxMesh_qfohn")
 surface_material_override/0 = SubResource("StandardMaterial3D_cw6fd")
 
@@ -25,3 +27,7 @@ tracker = &"left_hand"
 
 [node name="RightHand" type="XRController3D" parent="."]
 tracker = &"right_hand"
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.90518)
+mesh = SubResource("SphereMesh_fp48l")
