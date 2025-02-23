@@ -1,50 +1,53 @@
 import cv2
 import numpy as np
 import pytesseract
+import base64
+import io
 
-def extractFromImage(image_path, output_text_path=None):
-    # load image
-    img = cv2.imread(image_path)
-    if img is None:
-        raise FileNotFoundError(f"could not load image: {image_path}")
+def extractFromImage(image_base64, output_text_path=None):
+    # Decode base64 to image bytes
+    image_bytes = base64.b64decode(image_base64)
+    image_stream = io.BytesIO(image_bytes)
+    img = cv2.imdecode(np.frombuffer(image_stream.read(), np.uint8), cv2.IMREAD_COLOR)
     
-    # to hsv
+    if img is None:
+        raise ValueError("Could not decode image from base64 string.")
+    
+    # Convert to HSV color space
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     
-    # define range
+    # Define the HSV range for green highlight
     lower_green = np.array([35, 80, 80])
     upper_green = np.array([85, 255, 255])
     
-    # create mask
+    # Create a mask for the green highlight
     mask = cv2.inRange(hsv, lower_green, upper_green)
     
-    # morph cleanup
+    # Optional morphological operations to clean up noise
     kernel = np.ones((3, 3), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     
-    # mask image
+    # Create a masked image where only the green highlight remains
     highlighted = 255 * np.ones_like(img)
     highlighted[mask != 0] = img[mask != 0]
     
-    # to grayscale
+    # Convert to grayscale for OCR
     gray = cv2.cvtColor(highlighted, cv2.COLOR_BGR2GRAY)
     
-    # perform ocr
+    # Perform OCR
     ocr_result = pytesseract.image_to_string(gray)
     
-    # split lines
+    # Split lines
     text_lines = ocr_result.splitlines()
     
-    # optional save
+    # Optionally save the recognized text to a file
     if output_text_path:
         with open(output_text_path, 'w', encoding='utf-8') as f:
             f.write(ocr_result)
     
-    # show windows
-    cv2.imshow("mask", mask)
-    cv2.imshow("highlight", highlighted)
-    cv2.waitKey(0)
+    # Show the masked image for debugging (optional)
+
     cv2.destroyAllWindows()
     
     return text_lines
