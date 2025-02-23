@@ -5,6 +5,8 @@ import base64
 import io
 import mimetypes
 
+from extractFromImage import extractFromImage
+
 def createNewTextChat(client,chatRequest):
     output=""
     stream = client.chat.completions.create(
@@ -46,16 +48,18 @@ def createNewParsedImageChat(client, image_file):
     # Convert image to base64
     image_data = base64.b64encode(image_file.read()).decode("utf-8")
 
+    openCVAnswer=extractFromImage(image_data)
+
     # Call OpenAI's vision model
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": "You are an AI that can process text on images and turn them into markdown."},
+            {"role": "system", "content": "You are an AI that can process text and turn them into markdown."},
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Please respond with a markdown form of the text of the image I've given you, tidied up and made more presentable. Only include the content of the markdown in the output, Do not include the surrounding brackets or such. Do not include any images."},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}},
+                    {"type": "text", "text": "Please respond with a markdown form of the text    I've given you, tidied up and made more presentable. Only include the content of the markdown in the output, Do not include the surrounding brackets or such. Do not include any images."},
+                    {"type": "text", "text": "\n".join(openCVAnswer)},
                 ],
             },
         ],

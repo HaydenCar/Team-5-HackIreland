@@ -7,3 +7,6 @@ python-dotenv
 gunicorn
 bcrypt
 mimetypes
+opencv-python
+pytesseract
+tesseract
