@@ -33,7 +33,7 @@
   // If this doesn't appear, the path is invalid or blocked.
   // For local images, ensure they exist in /static/uploads, e.g. "/static/uploads/my_image.jpg"
   const imageUrl = "/static/image.png";
-  fabric.Image.fromURL(imageUrl, function(img) {
+  fabric.Image.fromURL(imageUrl, function (img) {
     img.set({ left: 0, top: 0, selectable: false });
     canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
   }, { crossOrigin: 'anonymous' });
@@ -43,7 +43,7 @@
     canvas.isDrawingMode = true;
     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
     // Thicker line, bright yellow at 50% opacity
-    canvas.freeDrawingBrush.color = 'rgba(255, 255, 0, 0.5)';
+    canvas.freeDrawingBrush.color = 'rgba(183, 252, 98, 255)';
     canvas.freeDrawingBrush.width = 15;
     // Remove rectangle events
     canvas.off('mouse:down');
@@ -61,7 +61,7 @@
     canvas.off('mouse:up');
 
     let rect, isDown, origX, origY;
-    canvas.on('mouse:down', function(o) {
+    canvas.on('mouse:down', function (o) {
       isDown = true;
       const pointer = canvas.getPointer(o.e);
       origX = pointer.x;
@@ -79,7 +79,7 @@
       canvas.add(rect);
     });
 
-    canvas.on('mouse:move', function(o) {
+    canvas.on('mouse:move', function (o) {
       if (!isDown) return;
       const pointer = canvas.getPointer(o.e);
       rect.set({
@@ -95,7 +95,7 @@
       canvas.renderAll();
     });
 
-    canvas.on('mouse:up', function() {
+    canvas.on('mouse:up', function () {
       isDown = false;
       // Remove events if you only want one rectangle
       canvas.off('mouse:down');
