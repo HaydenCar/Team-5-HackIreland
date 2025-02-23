@@ -156,5 +156,26 @@ def getAllData():
         "\n".join("<li>{}</li>".format(key) for key in onlineImages if key not in imageCache),
     )
 
+@app.route("/getOnlineMarkdown", methods=["GET"])
+def get_online_markdown():
+    # Get file keys from the S3 bucket, then remove the prefix "markDowns/" and the ".md" suffix.
+    online_markdowns = [ key[len("markDowns/"):-3] for key in getDirectoryFiles("markDowns", s3_client, BUCKET_NAME) ]
+    return jsonify(online_markdowns)
+
+@app.route("/notes/<note_id>")
+def show_note(note_id):
+    # Convert underscores back to spaces if needed
+    # (Assuming your S3 keys use spaces, e.g., "Page 6")
+    note_name = note_id.replace("_", " ")
+    filename = "markDowns/" + note_name + ".md"
+    md_content = download_file(filename, s3_client, BUCKET_NAME)
+    if md_content:
+        html_content = markdown.markdown(md_content)
+    else:
+        html_content = "<p>Markdown not found</p>"
+    # Render the same notes.html template, passing the content
+    return render_template("notes.html", note_content=html_content, active_note=note_name)
+
+
 if __name__ == "__main__":
         app.run(host="0.0.0.0", port=5000,debug=True)
