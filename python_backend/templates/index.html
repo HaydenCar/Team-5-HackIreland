@@ -1,48 +1,116 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Image reader thingy majiggy</title>
-</head>
-<body>
-    <div class="container text-center mt-5">
-        <h1 class="display-4">Hello, Flask!</h1>
-        <p class="lead">This is a basic Bootstrap-styled page served by Flask.</p>
-    </div>
-    <div class="container text-center mt-5">
-        <form action="/downloadMarkdown" method="get">
-            <input type="text" name="markdownID" required>
-            <button type="submit" class="btn btn-primary">Input markdown ID</button>
-        </form>
-    </div>
-    <div class="container text-center mt-5">
-        <form action="/downloadImage" method="get">
-            <input type="text" name="imageID" required>
-            <button type="submit" class="btn btn-primary">Input image ID</button>
-        </form>
-    </div>
-    <div class="container text-center mt-5">
-        <form action="/uploadImageQueryForparsing" method="post" enctype="multipart/form-data" class="mt-4">
-            <input type="text" name="markdownID" required>
-            <input type="file" name="image" accept="image/*" required>
-            <button type="submit" class="btn btn-primary">Upload Image and name</button>
-        </form>
+{% extends "base.html" %}
+{% block title %}Image Reader - HoloNote{% endblock %}
+
+{% block content %}
+<div class="main-container">
+  <!-- SIDE PANEL -->
+
+  <!-- MAIN CONTENT PANEL -->
+  <main class="glass content-panel">
+    <h2>Tools</h2>
+
+    <!-- Camera Button -->
+    <div class="mb-4">
+      <h5>Camera</h5>
+      <button id="cameraButton" class="btn btn-primary">Show Live Feed</button>
+      <div id="cameraFeed" style="display:none; text-align: center;">
+        <video id="video" width="640" height="480" autoplay></video>
+      </div>
     </div>
 
-    <div class="container text-center mt-5">
-        <form action="/deleteImageAndMarkdown" method="post">
-            <input type="text" name="dataID" required>
-            <button type="submit" class="btn btn-primary">Delete image and markdown</button>
-        </form>
+    <!-- Download Markdown Form -->
+    <div class="mb-4">
+      <h5>Download Markdown</h5>
+      <form action="/downloadMarkdown" method="get" class="mb-3">
+        <div class="input-group">
+          <input type="text" name="markdownID" class="form-control" placeholder="Enter Markdown ID" required>
+          <button type="submit" class="btn btn-primary">Download</button>
+        </div>
+      </form>
     </div>
 
-    <div class = "container text-center mt-5">
-        <form action="/getAllData" method="get">
-            <button type="submit" class="btn btn-primary">Get all data</button>
-        </form>
+    <!-- Download Image Form -->
+    <div class="mb-4">
+      <h5>Download Image</h5>
+      <form action="/downloadImage" method="get" class="mb-3">
+        <div class="input-group">
+          <input type="text" name="imageID" class="form-control" placeholder="Enter Image ID" required>
+          <button type="submit" class="btn btn-primary">Download</button>
+        </div>
+      </form>
     </div>
-    <div class="container text-center mt-5">
-        <p><a href="/logout">Logout</a></p>
+
+    <!-- Upload Image and Markdown Form -->
+    <div class="mb-4">
+      <h5>Upload Image and Markdown</h5>
+      <form action="/uploadImageQueryForparsing" method="post" enctype="multipart/form-data" class="mb-3">
+        <div class="input-group mb-3">
+          <input type="text" name="markdownID" class="form-control" placeholder="Enter Markdown ID" required>
+        </div>
+        <div class="input-group mb-3">
+          <input type="file" name="image" class="form-control" accept="image/*" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+      </form>
     </div>
-</body>
-</html>
+
+    <!-- Delete Image and Markdown Form -->
+    <div class="mb-4">
+      <h5>Delete Image and Markdown</h5>
+      <form action="/deleteImageAndMarkdown" method="post" class="mb-3">
+        <div class="input-group">
+          <input type="text" name="dataID" class="form-control" placeholder="Enter Data ID" required>
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Get All Data Button -->
+    <div class="mb-4">
+      <h5>Get All Data</h5>
+      <form action="/getAllData" method="get" class="mb-3">
+        <button type="submit" class="btn btn-info">Get All Data</button>
+      </form>
+    </div>
+
+    <!-- Go to Notes Button -->
+    <div class="mb-4">
+      <h5>Notes</h5>
+      <a href="/notes" class="btn btn-success">Go to Notes</a>
+    </div>
+
+    <!-- Logout Link -->
+    <div class="mt-5">
+      <p><a href="/logout" class="text-danger">Logout</a></p>
+    </div>
+  </main>
+</div>
+
+<script>
+  document.getElementById('cameraButton').addEventListener('click', function() {
+    const cameraFeed = document.getElementById('cameraFeed');
+    const video = document.getElementById('video');
+
+    if (cameraFeed.style.display === 'none') {
+      cameraFeed.style.display = 'block';
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          video.srcObject = stream;
+        })
+        .catch(err => {
+          console.error('Error accessing camera: ', err);
+        });
+    } else {
+      cameraFeed.style.display = 'none';
+      const stream = video.srcObject;
+      const tracks = stream.getTracks();
+
+      tracks.forEach(track => {
+        track.stop();
+      });
+
+      video.srcObject = null;
+    }
+  });
+</script>
+{% endblock %}
