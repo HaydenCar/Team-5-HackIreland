@@ -297,39 +297,92 @@ def create_note():
         return jsonify({"success": False, "error": str(e)})
     return jsonify({"success": True, "note_name": note_name})
 
+import uuid
+
 @app.route("/uploadTemp", methods=["POST"])
 @login_required
 def upload_temp():
     image_file = request.files["image"]
-    image_file.seek(0)
-    image_bytes = image_file.read()
     note_id = request.form.get("noteID")
-    if not image_bytes or not note_id:
+    if not image_file or not note_id:
         flash("Image or Note ID is missing", "error")
         return redirect(url_for("home"))
 
-    
-    # Send the imageData through a POST request
-    return render_template("highlight.html",note_id=note_id,imageType=image_file.content_type).replace("data.imageData", '"'+base64.b64encode(image_bytes).decode('utf-8')+'"')
+    # Read the file into memory
+    image_file.seek(0)
+    image_bytes = image_file.read()
+
+    # Generate a short temp ID
+    temp_id = str(uuid.uuid4())
+
+    # Store the bytes in-memory cache (or in S3, keyed by temp_id)
+    imageCache[temp_id] = image_bytes
+
+    # Redirect to a new GET route that displays highlight.html
+    # Notice we do NOT append the entire base64 to the URL.
+    return redirect(url_for("highlight_get", note_id=note_id, temp_id=temp_id))
 
 
-# NEW: Highlight endpoint
-@app.route("/highlight", methods=["POST"])
+
+@app.route("/highlight/<note_id>/<temp_id>", methods=["GET"])
 @login_required
-def highlight():
-    imageType = request.form.get("imageType")
-    imageData = request.form.get("imageData")
-    note_id = request.args.get("noteID")
-    if not imageData or not note_id:
-        flash("Image ID and Note ID are required", "error")
-        return redirect(url_for("notes"))
-    user_email = current_user.id
-    form_data = {
-        "imageData": imageData,
-        "imageType": imageType,
-        "note_id": note_id
-    }
-    return render_template("highlight.html", formData=form_data)
+def highlight_get(note_id, temp_id):
+    # Just serve the highlight.html and let it know
+    # which temp ID and note ID to use.
+    return render_template("highlight.html", note_id=note_id, temp_id=temp_id)
+
+
+@app.route("/upload_highlighted_image", methods=["POST"])
+@login_required
+def upload_highlighted_image():
+    user_email = current_user.id  # or use a default if user-specific is not needed
+    data = request.get_json()
+    merged_data_url = data.get("mergedDataURL")
+    if not merged_data_url:
+        return jsonify({"error": "No mergedDataURL provided"}), 400
+
+    # merged_data_url should look like "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+    # Split off the base64 header.
+    try:
+        header, encoded = merged_data_url.split(",", 1)
+    except ValueError:
+        return jsonify({"error": "Invalid data URL format"}), 400
+
+    # Decode the base64
+    image_bytes = base64.b64decode(encoded)
+
+    # Decide on your S3 key. For example:
+    s3_key = f"{user_email}/highlighted_notes/image.png"  # or if you want it fixed, omit user_email
+
+    try:
+        s3_client.put_object(
+            Bucket=BUCKET_NAME,
+            Key=s3_key,
+            Body=image_bytes,
+            ContentType="image/png"  # helps S3 set the correct mime-type
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({
+        "message": "Image uploaded successfully to S3",
+        "s3_key": s3_key
+    }), 200
+
+
+@app.route("/get_temp_image/<temp_id>", methods=["GET"])
+@login_required
+def get_temp_image(temp_id):
+    # Grab bytes from your in-memory cache (or from S3 by key)
+    if temp_id not in imageCache:
+        return jsonify({"error": "Temp image not found"}), 404
+    img_bytes = imageCache[temp_id]
+
+    # Convert to base64 string
+    b64_str = base64.b64encode(img_bytes).decode("utf-8")
+
+    return jsonify({"image_base64": b64_str})
+
 
 if __name__ == "__main__":
     try:
