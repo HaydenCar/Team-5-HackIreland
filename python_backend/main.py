@@ -333,4 +333,12 @@ def highlight():
     return render_template("highlight.html", image_url=image_url, image_id=image_id, note_id=note_id)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    try:
+        from pyngrok import ngrok
+        # Open a tunnel on port 5000 and get a public URL
+        public_url = ngrok.connect(5000)
+        print(" * ngrok tunnel available at:", public_url)
+    except ImportError:
+        print(" * pyngrok is not installed. To install, run 'pip install pyngrok'")
+    app.run(host="0.0.0.0", port=5000, debug=False)
+

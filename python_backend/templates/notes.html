@@ -1,16 +1,47 @@
 {% extends "base.html" %}
 {% block title %}Notes - HoloNote{% endblock %}
 
+{% block styles %}
+<style>
+  /* Ensure the base layout has the viewport meta tag:
+     <meta name="viewport" content="width=device-width, initial-scale=1">
+  */
+  .main-container {
+    display: flex;
+    flex-direction: row; /* Desktop: side-by-side */
+  }
+  .side-panel {
+    width: 300px;
+    /* any other desktop styling */
+  }
+  .content-panel {
+    flex: 1;
+    /* any other desktop styling */
+  }
+  
+  /* On mobile, stack the panels vertically */
+  @media (max-width: 768px) {
+    .main-container {
+      flex-direction: column;
+    }
+    .side-panel, .content-panel {
+      width: 100%;
+    }
+    /* Optionally adjust spacing */
+    .side-panel {
+      margin-bottom: 10px;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="main-container">
   <!-- SIDE PANEL -->
   <nav class="glass side-panel">
     <div class="d-flex justify-content-between align-items-center">
       <h4 class="notes-title">Notes</h4>
-      <!-- Plus button for creating a new note -->
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createNoteModal">
-        +
-      </button>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createNoteModal">+</button>
     </div>
     <div class="notes-container" id="notesContainer">
       <!-- Notes will be dynamically populated via JavaScript -->
@@ -20,7 +51,6 @@
   <!-- MAIN CONTENT PANEL -->
   <main class="glass content-panel">
     {% if active_note %}
-      <!-- If a note is selected, show its name and the camera button -->
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="mb-0">{{ active_note }}</h2>
         <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#cameraModal">
@@ -28,7 +58,6 @@
         </button>
       </div>
     {% else %}
-      <!-- Otherwise, just show a default heading -->
       <h2>Note Content</h2>
     {% endif %}
     
@@ -71,9 +100,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <!-- Hidden input for note ID -->
           <input type="hidden" name="noteID" value="{{ active_note_id }}">
-          <!-- Input for capturing an image or selecting from gallery -->
           <input 
             type="file"
             name="image"
@@ -95,12 +122,10 @@
     </div>
   </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // Load the current user's notes
   fetch('/getOnlineMarkdown')
     .then(response => response.json())
     .then(data => {
@@ -116,7 +141,6 @@
     })
     .catch(error => console.error("Error fetching note list:", error));
 
-  // Create Note functionality
   document.getElementById("createNoteButton").addEventListener("click", function() {
     const noteName = document.getElementById("noteNameInput").value.trim();
     if (!noteName) {
