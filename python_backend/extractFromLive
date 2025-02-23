@@ -1,0 +1,67 @@
+import cv2
+import numpy as np
+import pytesseract
+
+def extractFromLive(frame):
+    # Convert frame to HSV color space
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    
+    # Define the HSV range for the green highlight
+    lower_green = np.array([35, 80, 80])
+    upper_green = np.array([85, 255, 255])
+    
+    # Create a mask for the green highlight
+    mask = cv2.inRange(hsv, lower_green, upper_green)
+    
+    # Optional: Apply morphological operations to reduce noise
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    
+    # Create a masked image where only the green-highlighted parts remain
+    highlighted = 255 * np.ones_like(frame)
+    highlighted[mask != 0] = frame[mask != 0]
+    
+    # Convert the masked image to grayscale for OCR
+    gray = cv2.cvtColor(highlighted, cv2.COLOR_BGR2GRAY)
+    
+    return gray
+
+def extract_text_from_frame(frame):
+    processed = extractFromLive(frame)
+    # Perform OCR on the processed frame
+    ocr_result = pytesseract.image_to_string(processed)
+    return ocr_result.strip()
+
+def main():
+    # Open a connection to the default camera (device 0)
+    cap = cv2.VideoCapture(0)
+    
+    if not cap.isOpened():
+        print("Cannot open camera")
+        return
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Can't receive frame (stream end?). Exiting ...")
+            break
+
+        # Extract text from the current frame
+        text = extract_text_from_frame(frame)
+        
+        # Display the original frame and the OCR result on the console
+        cv2.imshow('Live Feed', frame)
+        cv2.imshow('Processed (for OCR)', extractFromLive(frame))
+        print("Detected Text:", text)
+        
+        # Press 'q' to quit the live feed
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    
+    # Release the capture and close windows
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
