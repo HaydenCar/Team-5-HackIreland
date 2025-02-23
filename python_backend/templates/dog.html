@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Live Highlight Detection</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+        }
+
+        video,
+        canvas {
+            margin: 10px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Live Highlight Detection</h1>
+    <!-- Live camera feed -->
+    <video id="video" width="640" height="480" autoplay playsinline></video>
+    <!-- Processed image (for highlights) -->
+    <canvas id="canvas" width="640" height="480"></canvas>
+
+    <!-- Load OpenCV.js from CDN -->
+    <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady();"></script>
+    <script>
+        // Access DOM elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+
+        // Request camera access
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error("Error accessing the camera: ", err);
+            });
+
+        // Called when OpenCV.js is ready
+        function onOpenCvReady() {
+            console.log("OpenCV.js is ready");
+            startVideoProcessing();
+        }
+
+        function startVideoProcessing() {
+            // Create OpenCV Mats
+            let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+            let hsv = new cv.Mat();
+            let mask = new cv.Mat();
+            let dst = new cv.Mat();
+
+            // Create a kernel for morphological operations
+            let kernel = cv.Mat.ones(3, 3, cv.CV_8U);
+
+            // Define lower and upper bounds for green in HSV
+            let lower = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [35, 80, 80, 0]);
+            let upper = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [85, 255, 255, 255]);
+            // But for inRange we use 3-element arrays:
+            let lowerScalar = new cv.Scalar(35, 80, 80);
+            let upperScalar = new cv.Scalar(85, 255, 255);
+
+            // Create a VideoCapture object from the video element
+            let cap = new cv.VideoCapture(video);
+
+            // Main processing loop
+            function processFrame() {
+                try {
+                    // Capture a frame from the video
+                    cap.read(src);
+                    // Convert from RGBA to RGB
+                    cv.cvtColor(src, src, cv.COLOR_RGBA2RGB);
+                    // Convert frame to HSV
+                    cv.cvtColor(src, hsv, cv.COLOR_RGB2HSV);
+                    // Create mask based on the green HSV range
+                    cv.inRange(hsv, lowerScalar, upperScalar, mask);
+                    // Apply morphological closing and opening to reduce noise
+                    cv.morphologyEx(mask, mask, cv.MORPH_CLOSE, kernel);
+                    cv.morphologyEx(mask, mask, cv.MORPH_OPEN, kernel);
+                    // Create a white image and copy the highlighted areas from the source frame
+                    dst.setTo(new cv.Scalar(255, 255, 255));
+                    src.copyTo(dst, mask);
+                    // Display the processed image on the canvas
+                    cv.imshow('canvas', dst);
+                    // Schedule the next frame processing
+                    requestAnimationFrame(processFrame);
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+            // Start processing
+            requestAnimationFrame(processFrame);
+        }
+    </script>
+</body>
+
+</html>
