@@ -351,23 +351,37 @@ def upload_highlighted_image():
     # Decode the base64
     image_bytes = base64.b64decode(encoded)
 
-    # Decide on your S3 key. For example:
-    s3_key = f"{user_email}/highlighted_notes/image.png"  # or if you want it fixed, omit user_email
 
-    try:
-        s3_client.put_object(
-            Bucket=BUCKET_NAME,
-            Key=s3_key,
-            Body=image_bytes,
-            ContentType="image/png"  # helps S3 set the correct mime-type
-        )
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    markdown_id = "image"
+    if not markdown_id:
+        return jsonify({"error": "Markdown ID is required"}), 400
 
-    return jsonify({
-        "message": "Image uploaded successfully to S3",
-        "s3_key": s3_key
-    }), 200
+
+    image_io = io.BytesIO(image_bytes)
+    markdownResponse = createNewParsedImageChat(OpenAIClient, image_io)
+
+    markdown_key = f"{user_email}/markDowns/{markdown_id}.md"
+    markdownCache[markdown_key] = markdownResponse
+    upload_file(markdown_key, markdownResponse, s3_client, BUCKET_NAME)
+
+    image_key = f"{user_email}/highlighted_notes/{markdown_id}.png"
+    upload_file(image_key, image_bytes, s3_client, BUCKET_NAME)
+    imageCache[image_key] = image_bytes
+
+    return """
+    <html>
+    <head>
+        <title>Highlighted Note</title>
+    </head>
+    <body>
+        <h1>Highlighted Note</h1>
+        <img src="data:image/png;base64,{}" />
+        <hr />
+        <pre>{}</pre>
+    </body>
+    </html>
+    """.format(base64.b64encode(image_bytes).decode("utf-8"), markdownResponse)
+
 
 
 @app.route("/get_temp_image/<temp_id>", methods=["GET"])

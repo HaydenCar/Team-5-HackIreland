@@ -225,8 +225,12 @@ Canvas Page
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mergedDataURL: mergedDataURL })
     })
-    .then(res => res.json())
+    .then(res => {
+      alert("Your highlighted image was uploaded to S3!");
+      res.json()
+  })
     .then(data => {
+      alert("Your highlighted image was uploaded to S3!");
       if (data.error) {
         console.error("Error uploading:", data.error);
       } else {

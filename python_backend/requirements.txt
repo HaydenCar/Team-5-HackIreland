@@ -10,3 +10,4 @@ mimetypes
 opencv-python
 pytesseract
 tesseract
+requests
