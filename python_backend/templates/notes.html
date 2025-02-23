@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Notes - HoloNote{% endblock %}
 
-{% block styles %}
+{% block head %}
 <style>
   /* Base container padding */
   .notes-container-wrapper {
@@ -10,14 +10,13 @@
 
   /* Sidebar styling */
   .notes-sidebar {
-    background-color: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ccc !important; /* Added border */
     border-radius: 8px;
     padding: 1rem;
     margin-bottom: 1rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
   .notes-sidebar h4 {
-    margin-bottom: 1rem;
     font-weight: bold;
   }
   .notes-sidebar .note-link {
@@ -35,14 +34,55 @@
 
   /* Content area styling */
   .notes-content {
-    background-color: rgba(255, 255, 255, 0.98);
+    border: 1px solid #ccc !important; /* Added border */
     border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
-  /* Responsive grid using Bootstrap classes.
-     On mobile (xs and sm) columns stack; on md+ they sit side by side. */
+  /* Heading sizes */
+  .notes-content h1 {
+    font-size: 2rem;
+    margin: 0;
+  }
+  .notes-content h2 {
+    font-size: 1.5rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .notes-content h3 {
+    font-size: 1.2rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .notes-content h4 {
+    font-size: 1.1rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Custom icon button: no background, no padding, custom color */
+  .icon-button {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    color: #2b3861; /* Pick any color you like */
+  }
+
+  /* Ensure the SVG inherits the parent's color for stroke/fill */
+  .icon-button svg {
+    stroke: currentColor;
+    fill: none;
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Optional: on hover, adjust color if desired */
+  .icon-button:hover {
+    color: #4353a6; /* Slightly darker or lighter color */
+  }
 </style>
 {% endblock %}
 
@@ -51,10 +91,23 @@
   <div class="row">
     <!-- Sidebar: takes full width on mobile, 4/12 on medium+ -->
     <div class="col-12 col-md-4">
-      <div class="notes-sidebar">
-        <div class="d-flex justify-content-between align-items-center">
+      <div class="notes-sidebar glass">
+        <div class="d-flex justify-content-between align-items-top">
           <h4>Notes</h4>
-          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createNoteModal">+</button>
+          <!-- Use our custom .icon-button class -->
+          <button class="icon-button" data-bs-toggle="modal" data-bs-target="#createNoteModal" title="Create Note">
+            <svg xmlns="http://www.w3.org/2000/svg" 
+                 class="icon icon-tabler icon-tabler-plus"
+                 viewBox="0 0 24 24" 
+                 stroke-width="2" 
+                 stroke-linecap="round" 
+                 stroke-linejoin="round"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
         </div>
         <div id="notesContainer">
           <!-- Dynamically populated note links -->
@@ -63,12 +116,26 @@
     </div>
     <!-- Content: takes full width on mobile, 8/12 on medium+ -->
     <div class="col-12 col-md-8">
-      <div class="notes-content">
+      <div class="notes-content glass">
         {% if active_note %}
+          <!-- Display the selected note’s title as an H1 -->
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="mb-0">{{ active_note }}</h2>
-            <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#cameraModal">
-              <i class="bi bi-camera"></i> Camera
+            <h1>{{ active_note }}</h1>
+            <!-- Also use our custom icon-button class here -->
+            <button class="icon-button" data-bs-toggle="modal" data-bs-target="#cameraModal" title="Upload Image">
+              <svg xmlns="http://www.w3.org/2000/svg" 
+                   class="icon icon-tabler icon-tabler-camera"
+                   viewBox="0 0 24 24" 
+                   stroke-width="2"
+                   stroke-linecap="round" 
+                   stroke-linejoin="round"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M10 4h4l2 2h2a2 2 0 0 1 2 2v10c0 
+                         1.1 -.9 2 -2 2h-12a2 2 0 0 1 -2 -2v-10
+                         a2 2 0 0 1 2 -2h2l2 -2" />
+                <circle cx="12" cy="13" r="3" />
+              </svg>
             </button>
           </div>
         {% else %}
@@ -116,7 +183,8 @@
         </div>
         <div class="modal-body">
           <input type="hidden" name="noteID" value="{{ active_note_id }}">
-          <input type="file" name="image" id="cameraInput" class="form-control" accept="image/*" capture="environment" required>
+          <input type="file" name="image" id="cameraInput" class="form-control" accept="image/*" capture="environment"
+                 required>
           <p class="mt-2 small text-muted">
             On mobile, you can take a photo directly. On desktop, this will open the file picker.
           </p>
@@ -162,21 +230,21 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ note_name: noteName })
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        const modalEl = document.getElementById('createNoteModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        modal.hide();
-        window.location.href = "/notes/" + encodeURIComponent(noteName.replace(/ /g, "_"));
-      } else {
-        alert("Error creating note: " + data.error);
-      }
-    })
-    .catch(error => {
-      console.error("Error:", error);
-      alert("An error occurred while creating the note.");
-    });
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const modalEl = document.getElementById('createNoteModal');
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          modal.hide();
+          window.location.href = "/notes/" + encodeURIComponent(noteName.replace(/ /g, "_"));
+        } else {
+          alert("Error creating note: " + data.error);
+        }
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        alert("An error occurred while creating the note.");
+      });
   });
 </script>
 {% endblock %}

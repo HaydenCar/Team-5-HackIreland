@@ -3,121 +3,124 @@
 
 {% block content %}
 <div class="main-container">
-  <!-- SIDE PANEL -->
+    <!-- SIDE PANEL -->
 
-  <!-- MAIN CONTENT PANEL -->
-  <main class="glass content-panel">
-    <h2>Tools</h2>
+    <!-- MAIN CONTENT PANEL -->
+    <main class="glass content-panel">
+        <h2>Tools</h2>
 
-    <!-- Camera Button -->
-    <div class="mb-4">
-      <h5>Camera</h5>
-      <button id="cameraButton" class="btn btn-primary">Show Live Feed</button>
-      <div id="cameraFeed" style="display:none; text-align: center;">
-        <video id="video" width="640" height="480" autoplay></video>
-        <p id="cameraError" style="color: red; display: none;">Camera access denied or unavailable.</p>
-      </div>
-    </div>
-
-    <!-- Download Markdown Form -->
-    <div class="mb-4">
-      <h5>Download Markdown</h5>
-      <form action="/downloadMarkdown" method="get" class="mb-3">
-        <div class="input-group">
-          <input type="text" name="markdownID" class="form-control" placeholder="Enter Markdown ID" required>
-          <button type="submit" class="btn btn-primary">Download</button>
+        <!-- Camera Button -->
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="mb-4">
+                <h5>Camera</h5>
+                <button id="cameraButton" class="btn btn-primary">Show Live Feed</button>
+                <div id="cameraFeed" style="display:none; text-align: center;">
+                    <video id="video" width="640" height="480" autoplay></video>
+                    <p id="cameraError" style="color: red; display: none;">Camera access denied or unavailable.</p>
+                </div>
+            </div>
+            <div>
+                <h5>Notes</h5>
+                <a href="/notes" class="btn btn-primary">Go to Notes</a>
+            </div>
         </div>
-      </form>
-    </div>
 
-    <!-- Download Image Form -->
-    <div class="mb-4">
-      <h5>Download Image</h5>
-      <form action="/downloadImage" method="get" class="mb-3">
-        <div class="input-group">
-          <input type="text" name="imageID" class="form-control" placeholder="Enter Image ID" required>
-          <button type="submit" class="btn btn-primary">Download</button>
+
+        <!-- Download Markdown Form -->
+        <div class=" mb-4">
+            <h5>Download Markdown</h5>
+            <form action="/downloadMarkdown" method="get" class="mb-3">
+                <div class="input-group">
+                    <input type="text" name="markdownID" class="form-control" placeholder="Enter Markdown ID" required>
+                    <button type="submit" class="btn btn-primary">Download</button>
+                </div>
+            </form>
         </div>
-      </form>
-    </div>
 
-    <!-- Upload Image and Markdown Form -->
-    <div class="mb-4">
-      <h5>Upload Image and Markdown</h5>
-      <form action="/uploadImageQueryForparsing" method="post" enctype="multipart/form-data" class="mb-3">
-        <div class="input-group mb-3">
-          <input type="text" name="markdownID" class="form-control" placeholder="Enter Markdown ID" required>
+        <!-- Download Image Form -->
+        <div class="mb-4">
+            <h5>Download Image</h5>
+            <form action="/downloadImage" method="get" class="mb-3">
+                <div class="input-group">
+                    <input type="text" name="imageID" class="form-control" placeholder="Enter Image ID" required>
+                    <button type="submit" class="btn btn-primary">Download</button>
+                </div>
+            </form>
         </div>
-        <div class="input-group mb-3">
-          <input type="file" name="image" class="form-control" accept="image/*" required>
+
+        <!-- Upload Image and Markdown Form -->
+        <div class="mb-4">
+            <h5>Upload Image and Markdown</h5>
+            <form action="/uploadImageQueryForparsing" method="post" enctype="multipart/form-data" class="mb-3">
+                <div class="input-group mb-3">
+                    <input type="text" name="markdownID" class="form-control" placeholder="Enter Markdown ID" required>
+                </div>
+                <div class="input-group mb-3">
+                    <input type="file" name="image" class="form-control" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
         </div>
-        <button type="submit" class="btn btn-primary">Upload</button>
-      </form>
-    </div>
 
-    <!-- Delete Image and Markdown Form -->
-    <div class="mb-4">
-      <h5>Delete Image and Markdown</h5>
-      <form action="/deleteImageAndMarkdown" method="post" class="mb-3">
-        <div class="input-group">
-          <input type="text" name="dataID" class="form-control" placeholder="Enter Data ID" required>
-          <button type="submit" class="btn btn-danger">Delete</button>
+        <!-- Delete Image and Markdown Form -->
+        <div class="mb-4">
+            <h5>Delete Image and Markdown</h5>
+            <form action="/deleteImageAndMarkdown" method="post" class="mb-3">
+                <div class="input-group">
+                    <input type="text" name="dataID" class="form-control" placeholder="Enter Data ID" required>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
         </div>
-      </form>
-    </div>
 
-    <!-- Get All Data Button -->
-    <div class="mb-4">
-      <h5>Get All Data</h5>
-      <form action="/getAllData" method="get" class="mb-3">
-        <button type="submit" class="btn btn-info">Get All Data</button>
-      </form>
-    </div>
+        <!-- Get All Data Button -->
+        <div class="mb-4">
+            <h5>Get All Data</h5>
+            <form action="/getAllData" method="get" class="mb-3">
+                <button type="submit" class="btn btn-info">Get All Data</button>
+            </form>
+        </div>
 
-    <!-- Go to Notes Button -->
-    <div class="mb-4">
-      <h5>Notes</h5>
-      <a href="/notes" class="btn btn-success">Go to Notes</a>
-    </div>
+        <!-- Go to Notes Button -->
 
-    <!-- Logout Link -->
-    <div class="mt-5">
-      <p><a href="/logout" class="text-danger">Logout</a></p>
-    </div>
-  </main>
+        <!-- Logout Link -->
+        <div class="mt-5">
+            <p><a href="/logout" class="text-danger">Logout</a></p>
+        </div>
+    </main>
 </div>
 
 <script>
   document.getElementById('cameraButton').addEventListener('click', function() {
-    const cameraFeed = document.getElementById('cameraFeed');
-    const video = document.getElementById('video');
-    const cameraError = document.getElementById('cameraError');
+        const cameraFeed = document.getElementById('cameraFeed');
+        const video = document.getElementById('video');
+        const cameraError = document.getElementById('cameraError');
 
-    if (cameraFeed.style.display === 'none') {
-      // Show the camera feed
-      cameraFeed.style.display = 'block';
-      cameraError.style.display = 'none'; // Hide error message
+        if (cameraFeed.style.display === 'none') {
+            // Show the camera feed
+            cameraFeed.style.display = 'block';
+            cameraError.style.display = 'none'; // Hide error message
 
-      // Access the camera
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          video.srcObject = stream;
-        })
-        .catch(err => {
-          console.error('Error accessing camera: ', err);
-          cameraError.style.display = 'block'; // Show error message
-          cameraFeed.style.display = 'none'; // Hide the feed if there's an error
-        });
-    } else {
-      // Hide the camera feed and stop the stream
-      cameraFeed.style.display = 'none';
-      const stream = video.srcObject;
-      if (stream) {
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop()); // Stop all tracks
-        video.srcObject = null;
-      }
-    }
-  });
+            // Access the camera
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                })
+                .catch(err => {
+                    console.error('Error accessing camera: ', err);
+                    cameraError.style.display = 'block'; // Show error message
+                    cameraFeed.style.display = 'none'; // Hide the feed if there's an error
+                });
+        } else {
+            // Hide the camera feed and stop the stream
+            cameraFeed.style.display = 'none';
+            const stream = video.srcObject;
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop()); // Stop all tracks
+                video.srcObject = null;
+            }
+        }
+    });
 </script>
 {% endblock %}
