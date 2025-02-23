@@ -3,72 +3,87 @@
 
 {% block styles %}
 <style>
-  /* Ensure the base layout has the viewport meta tag:
-     <meta name="viewport" content="width=device-width, initial-scale=1">
-  */
-  .main-container {
-    display: flex;
-    flex-direction: row; /* Desktop: side-by-side */
+  /* Base container padding */
+  .notes-container-wrapper {
+    padding: 1rem;
   }
-  .side-panel {
-    width: 300px;
-    /* any other desktop styling */
+
+  /* Sidebar styling */
+  .notes-sidebar {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
-  .content-panel {
-    flex: 1;
-    /* any other desktop styling */
+  .notes-sidebar h4 {
+    margin-bottom: 1rem;
+    font-weight: bold;
   }
-  
-  /* On mobile, stack the panels vertically */
-  @media (max-width: 768px) {
-    .main-container {
-      flex-direction: column;
-    }
-    .side-panel, .content-panel {
-      width: 100%;
-    }
-    /* Optionally adjust spacing */
-    .side-panel {
-      margin-bottom: 10px;
-    }
+  .notes-sidebar .note-link {
+    display: block;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #2b3861;
+    transition: background 0.2s;
   }
+  .notes-sidebar .note-link:hover {
+    background-color: #f0f0f0;
+  }
+
+  /* Content area styling */
+  .notes-content {
+    background-color: rgba(255, 255, 255, 0.98);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  /* Responsive grid using Bootstrap classes.
+     On mobile (xs and sm) columns stack; on md+ they sit side by side. */
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="main-container">
-  <!-- SIDE PANEL -->
-  <nav class="glass side-panel">
-    <div class="d-flex justify-content-between align-items-center">
-      <h4 class="notes-title">Notes</h4>
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createNoteModal">+</button>
-    </div>
-    <div class="notes-container" id="notesContainer">
-      <!-- Notes will be dynamically populated via JavaScript -->
-    </div>
-  </nav>
-
-  <!-- MAIN CONTENT PANEL -->
-  <main class="glass content-panel">
-    {% if active_note %}
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="mb-0">{{ active_note }}</h2>
-        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#cameraModal">
-          <i class="bi bi-camera"></i> Camera
-        </button>
+<div class="container notes-container-wrapper">
+  <div class="row">
+    <!-- Sidebar: takes full width on mobile, 4/12 on medium+ -->
+    <div class="col-12 col-md-4">
+      <div class="notes-sidebar">
+        <div class="d-flex justify-content-between align-items-center">
+          <h4>Notes</h4>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createNoteModal">+</button>
+        </div>
+        <div id="notesContainer">
+          <!-- Dynamically populated note links -->
+        </div>
       </div>
-    {% else %}
-      <h2>Note Content</h2>
-    {% endif %}
-    
-    <div id="noteContent">
-      {% if note_content %}
-        {{ note_content|safe }}
-      {% else %}
-        <p>Select a note from the left to view its content.</p>
-      {% endif %}
     </div>
-  </main>
+    <!-- Content: takes full width on mobile, 8/12 on medium+ -->
+    <div class="col-12 col-md-8">
+      <div class="notes-content">
+        {% if active_note %}
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">{{ active_note }}</h2>
+            <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#cameraModal">
+              <i class="bi bi-camera"></i> Camera
+            </button>
+          </div>
+        {% else %}
+          <h2>Note Content</h2>
+        {% endif %}
+        <div id="noteContent">
+          {% if note_content %}
+            {{ note_content|safe }}
+          {% else %}
+            <p>Select a note from the left to view its content.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Create Note Modal -->
@@ -101,15 +116,7 @@
         </div>
         <div class="modal-body">
           <input type="hidden" name="noteID" value="{{ active_note_id }}">
-          <input 
-            type="file"
-            name="image"
-            id="cameraInput"
-            class="form-control"
-            accept="image/*"
-            capture="environment" 
-            required
-          >
+          <input type="file" name="image" id="cameraInput" class="form-control" accept="image/*" capture="environment" required>
           <p class="mt-2 small text-muted">
             On mobile, you can take a photo directly. On desktop, this will open the file picker.
           </p>
@@ -126,21 +133,24 @@
 
 {% block scripts %}
 <script>
+  // Fetch and populate the notes list
   fetch('/getOnlineMarkdown')
     .then(response => response.json())
     .then(data => {
       const container = document.getElementById("notesContainer");
+      container.innerHTML = '';
       data.forEach(noteName => {
         const noteUrl = "/notes/" + encodeURIComponent(noteName.replace(/ /g, "_"));
-        const a = document.createElement("a");
-        a.href = noteUrl;
-        a.className = "note-link";
-        a.textContent = noteName;
-        container.appendChild(a);
+        const link = document.createElement("a");
+        link.href = noteUrl;
+        link.className = "note-link";
+        link.textContent = noteName;
+        container.appendChild(link);
       });
     })
-    .catch(error => console.error("Error fetching note list:", error));
+    .catch(error => console.error("Error fetching notes:", error));
 
+  // Create Note functionality
   document.getElementById("createNoteButton").addEventListener("click", function() {
     const noteName = document.getElementById("noteNameInput").value.trim();
     if (!noteName) {

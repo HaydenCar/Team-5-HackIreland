@@ -1,133 +1,192 @@
 {% extends "base.html" %}
-{% block title %}Debug Highlight Page{% endblock %}
 
-{% block styles %}
+{% block title %}
+  Canvas Page
+{% endblock %}
+
+{% block head %}
 <style>
-  /* Ensure the viewport is set in your base.html head:
-     <meta name="viewport" content="width=device-width, initial-scale=1">
-  */
+  /* ------------- Canvas-Specific Styles ------------- */
 
-  /* On desktop, the canvas stays at 600x400 */
-  /* For mobile screens, let the canvas scale down */
-  @media (max-width: 768px) {
-    .container {
-      padding: 10px;
+  /* We can place the canvas in the content panel or any area inside main-container. */
+  .canvas-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 20px; /* Adds some spacing around the canvas */
+  }
+
+  .canvas-container {
+    width: 100%;
+    max-width: 300px; /* Mobile max size */
+    aspect-ratio: 1 / 1; /* Keeps it square */
+    border: 1px solid #ccc;
+    background-color: black; /* Fills unused space */
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Scale up on larger desktops */
+  @media (min-width: 992px) {
+    .canvas-container {
+      max-width: 1000px; /* or up to 1200px, your choice */
     }
-    /* Scale canvas to fit the device width, maintaining aspect ratio */
-    #highlightCanvas {
-      width: 100% !important;
-      height: auto !important;
-    }
+  }
+
+  /* Ensure the canvas fills the container */
+  .canvas-container canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
   }
 </style>
-{% endblock %}
+{% endblock head %}
 
 {% block content %}
-<div class="container text-center my-3">
-  <h3>Debug Highlight Page</h3>
-  <p>Check your DevTools network tab to ensure the image is actually loading.</p>
+<div class="main-container">
+  <!-- Optionally you can keep the side-panel if you like, or remove it -->
 
-  <!-- Tool Buttons -->
-  <div class="mb-3">
-    <button id="highlightToolBtn" class="btn btn-primary me-2">Highlight (Freehand)</button>
-    <button id="rectSelectToolBtn" class="btn btn-secondary">Rect. Select</button>
-  </div>
 
-  <!-- Canvas Container -->
-  <div style="display: inline-block; border: 1px solid #ccc;">
-    <canvas id="highlightCanvas" width="600" height="400" style="border: 1px solid #000;"></canvas>
-  </div>
+  <div class="glass content-panel">
+    <!-- --------------- Your Canvas Page Content --------------- -->
+    <div class="container text-center mb-3">
+      <p>Canvas is a responsive square. Unused space is black.</p>
+      <div class="d-flex justify-content-center mb-3">
+        <button id="highlightToolBtn" class="btn btn-primary mx-2">
+          Highlight (Freehand)
+        </button>
+        <button id="rectSelectToolBtn" class="btn btn-secondary mx-2">
+          Rect. Select
+        </button>
+      </div>
+    </div>
 
-  <!-- Finish Button -->
-  <div class="mt-3">
-    <button id="finishBtn" class="btn btn-success">Finish</button>
+    <div class="canvas-wrapper">
+      <div class="canvas-container">
+        <canvas id="highlightCanvas"></canvas>
+      </div>
+    </div>
+
+    <div class="container text-center mt-3">
+      <button id="finishBtn" class="btn btn-success">Finish</button>
+    </div>
   </div>
 </div>
-{% endblock %}
+{% endblock content %}
 
 {% block scripts %}
+<!-- Fabric.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.2.4/fabric.min.js"></script>
 <script>
-  const canvas = new fabric.Canvas('highlightCanvas');
+  document.addEventListener("DOMContentLoaded", function() {
+    const canvasEl = document.getElementById("highlightCanvas");
+    const container = document.querySelector(".canvas-container");
+    const canvas = new fabric.Canvas("highlightCanvas");
 
-  // Use a known placeholder or local path for the image
-  const imageUrl = "/static/image.png";
-  fabric.Image.fromURL(imageUrl, function (img) {
-    img.set({ left: 0, top: 0, selectable: false });
-    canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
-  }, { crossOrigin: 'anonymous' });
-
-  function enableHighlightTool() {
-    canvas.isDrawingMode = true;
-    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-    canvas.freeDrawingBrush.color = 'rgba(183, 252, 98, 255)';
-    canvas.freeDrawingBrush.width = 15;
-    canvas.off('mouse:down');
-    canvas.off('mouse:move');
-    canvas.off('mouse:up');
-    console.log("Freehand highlight tool enabled");
-  }
-
-  function enableRectTool() {
-    canvas.isDrawingMode = false;
-    canvas.off('mouse:down');
-    canvas.off('mouse:move');
-    canvas.off('mouse:up');
-
-    let rect, isDown, origX, origY;
-    canvas.on('mouse:down', function (o) {
-      isDown = true;
-      const pointer = canvas.getPointer(o.e);
-      origX = pointer.x;
-      origY = pointer.y;
-      rect = new fabric.Rect({
-        left: origX,
-        top: origY,
-        width: 0,
-        height: 0,
-        fill: 'transparent',
-        stroke: 'blue',
-        strokeWidth: 2,
-        selectable: false,
-      });
-      canvas.add(rect);
-    });
-
-    canvas.on('mouse:move', function (o) {
-      if (!isDown) return;
-      const pointer = canvas.getPointer(o.e);
-      rect.set({
-        width: Math.abs(origX - pointer.x),
-        height: Math.abs(origY - pointer.y)
-      });
-      if (pointer.x < origX) {
-        rect.set({ left: pointer.x });
-      }
-      if (pointer.y < origY) {
-        rect.set({ top: pointer.y });
-      }
+    /* Match <canvas> size to .canvas-container and scale the background image */
+    function resizeCanvas() {
+      canvasEl.width = container.clientWidth;
+      canvasEl.height = container.clientHeight;
+      canvas.setWidth(container.clientWidth);
+      canvas.setHeight(container.clientHeight);
       canvas.renderAll();
+    }
+
+    function loadBackgroundImage() {
+      const imageUrl = "/static/image.png"; // Use correct path
+      fabric.Image.fromURL(imageUrl, function(img) {
+        const scaleFactor = Math.min(canvas.width / img.width, canvas.height / img.height);
+        img.scale(scaleFactor);
+        img.set({
+          left: (canvas.width - img.getScaledWidth()) / 2,
+          top: (canvas.height - img.getScaledHeight()) / 2,
+          selectable: false
+        });
+        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+      }, { crossOrigin: "anonymous" });
+    }
+
+    /* Tools */
+    function enableHighlightTool() {
+      canvas.isDrawingMode = true;
+      canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+      canvas.freeDrawingBrush.color = "rgba(183, 252, 98, 1)";
+      canvas.freeDrawingBrush.width = 15;
+      canvas.off("mouse:down");
+      canvas.off("mouse:move");
+      canvas.off("mouse:up");
+      console.log("Freehand highlight tool enabled");
+    }
+
+    function enableRectTool() {
+      canvas.isDrawingMode = false;
+      canvas.off("mouse:down");
+      canvas.off("mouse:move");
+      canvas.off("mouse:up");
+
+      let rect, isDown, origX, origY;
+
+      canvas.on("mouse:down", function(o) {
+        isDown = true;
+        const pointer = canvas.getPointer(o.e);
+        origX = pointer.x;
+        origY = pointer.y;
+        rect = new fabric.Rect({
+          left: origX,
+          top: origY,
+          width: 0,
+          height: 0,
+          fill: "transparent",
+          stroke: "blue",
+          strokeWidth: 2,
+          selectable: false
+        });
+        canvas.add(rect);
+      });
+
+      canvas.on("mouse:move", function(o) {
+        if (!isDown) return;
+        const pointer = canvas.getPointer(o.e);
+        rect.set({
+          width: Math.abs(origX - pointer.x),
+          height: Math.abs(origY - pointer.y)
+        });
+        if (pointer.x < origX) rect.set({ left: pointer.x });
+        if (pointer.y < origY) rect.set({ top: pointer.y });
+        canvas.renderAll();
+      });
+
+      canvas.on("mouse:up", function() {
+        isDown = false;
+        // If you want to allow multiple rectangles, remove these unbinds:
+        canvas.off("mouse:down");
+        canvas.off("mouse:move");
+        canvas.off("mouse:up");
+      });
+      console.log("Rectangle tool enabled");
+    }
+
+    /* Event Listeners */
+    document.getElementById("highlightToolBtn").addEventListener("click", enableHighlightTool);
+    document.getElementById("rectSelectToolBtn").addEventListener("click", enableRectTool);
+
+    document.getElementById("finishBtn").addEventListener("click", function() {
+      const objects = canvas.getObjects();
+      console.log("Canvas objects:", objects);
+      alert("Finish clicked. Check console for objects data.");
     });
 
-    canvas.on('mouse:up', function () {
-      isDown = false;
-      canvas.off('mouse:down');
-      canvas.off('mouse:move');
-      canvas.off('mouse:up');
+    /* Initialization */
+    resizeCanvas();
+    loadBackgroundImage();
+    enableHighlightTool();
+
+    /* Resize on window change */
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+      loadBackgroundImage();
     });
-    console.log("Rectangle tool enabled");
-  }
-
-  document.getElementById('highlightToolBtn').addEventListener('click', enableHighlightTool);
-  document.getElementById('rectSelectToolBtn').addEventListener('click', enableRectTool);
-
-  document.getElementById('finishBtn').addEventListener('click', () => {
-    const objects = canvas.getObjects();
-    console.log("Objects:", objects);
-    alert("Finish clicked. Check console for objects data.");
   });
-
-  // Default to highlight tool
-  enableHighlightTool();
 </script>
-{% endblock %}
+{% endblock scripts %}
