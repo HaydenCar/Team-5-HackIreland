@@ -3,6 +3,10 @@ from flask import request, Flask, render_template, jsonify
 from botocore.exceptions import ClientError
 import base64
 import io
+import mimetypes
+
+from extractFromImage import extractFromImage
+
 def createNewTextChat(client,chatRequest):
     output=""
     stream = client.chat.completions.create(
@@ -44,16 +48,18 @@ def createNewParsedImageChat(client, image_file):
     # Convert image to base64
     image_data = base64.b64encode(image_file.read()).decode("utf-8")
 
+    openCVAnswer=extractFromImage(image_data)
+
     # Call OpenAI's vision model
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": "You are an AI that can process text on images and turn them into markdown."},
+            {"role": "system", "content": "You are an AI that can process text and turn them into markdown."},
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Please respond with a markdown form of the text of the image I've given you, tidied up and made more presentable. Only include the content of the markdown in the output, Do not include the surrounding brackets or such. Do not include any images."},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}},
+                    {"type": "text", "text": "Please respond with a markdown form of the text    I've given you, tidied up and made more presentable. Only include the content of the markdown in the output, Do not include the surrounding brackets or such. Do not include any images."},
+                    {"type": "text", "text": "\n".join(openCVAnswer)},
                 ],
             },
         ],
@@ -63,26 +69,28 @@ def createNewParsedImageChat(client, image_file):
     return response.choices[0].message.content
 
 def upload_file(filename, fileContent, s3_client, BUCKET_NAME):
-    if filename.endswith('.md'):
-        # Upload markdown file (expects a string, so we encode it)
-        print(s3_client.put_object(
-            Body=io.BytesIO(fileContent.encode('utf-8')),
-            Bucket=BUCKET_NAME,
-            Key=filename,
-            ContentType='text/markdown'
-        ))
-        return jsonify({'message': 'File uploaded successfully'}), 200
-    if filename.endswith('.jpg'):
-        # Upload image file (expects bytes, no need to encode)
-        print(s3_client.put_object(
-            Body=io.BytesIO(fileContent),
-            Bucket=BUCKET_NAME,
-            Key=filename,
-            ContentType='image/jpg'
-        ))
-        return jsonify({'message': 'File uploaded successfully'}), 200
+    try:
+        # Guess MIME type automatically
+        content_type, _ = mimetypes.guess_type(filename)
+        if not content_type:
+            content_type = "application/octet-stream"
 
-    return jsonify({'error': 'Incompatible file type'}), 400
+        # Convert markdown text to bytes
+        if filename.endswith('.md'):
+            fileContent = fileContent.encode('utf-8')
+
+        # Upload to S3
+        s3_client.put_object(
+            Body=fileContent,
+            Bucket=BUCKET_NAME,
+            Key=filename,
+            ContentType=content_type
+        )
+
+        return {"message": f"File '{filename}' uploaded successfully", "status": "success"}
+    
+    except Exception as e:
+        return {"error": str(e), "status": "failed"}
 
     
 def download_file(filename, s3_client, BUCKET_NAME):
@@ -120,6 +128,8 @@ def check_file_existence(filename, s3_client, BUCKET_NAME):
 
 def getDirectoryFiles(directory, s3_client, BUCKET_NAME):
     files = []
-    for file in s3_client.list_objects(Bucket=BUCKET_NAME, Prefix=directory)['Contents']:
-        files.append(file['Key'])
+    repsonse=s3_client.list_objects(Bucket=BUCKET_NAME, Prefix=directory)
+    if("Contents" in repsonse):
+        for file in repsonse["Contents"]:
+            files.append(file['Key'])
     return files
