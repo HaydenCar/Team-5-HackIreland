@@ -81,11 +81,11 @@ Canvas Page
 <!-- Fabric.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.2.4/fabric.min.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
-    const noteID = "{{ note_id }}";  // Provided by your Flask route
-    const tempID = "{{ temp_id }}";  // Provided by your Flask route
+    const noteID = "{{ note_id }}";
+    const tempID = "{{ temp_id }}";
 
-    // 1) We'll fetch the image data from /get_temp_image/<temp_id>
+  document.addEventListener("DOMContentLoaded", function() {
+
     fetch(`/get_temp_image/${tempID}`)
       .then(response => response.json())
       .then(data => {
@@ -93,20 +93,15 @@ Canvas Page
           console.error("Error retrieving image data:", data.error);
           return;
         }
-        // 2) Build a Data URL for Fabric
         const b64String = data.image_base64;
-        // If your original file is known to be JPG, set "image/jpeg"
-        // If you aren't sure, store the content type in your cache as well
         const mimeType = "image/jpeg";
         const imageUrl = `data:${mimeType};base64,${b64String}`;
-
-        // 3) Initialize Fabric with the loaded data
         initFabricCanvas(imageUrl);
       })
       .catch(err => console.error("Fetch get_temp_image error:", err));
   });
 
-  let canvas; // We'll keep a reference outside the function
+  let canvas;
 
   function initFabricCanvas(imageUrl) {
     const canvasEl = document.getElementById("highlightCanvas");
@@ -124,7 +119,6 @@ Canvas Page
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // Load background image
     fabric.Image.fromURL(imageUrl, function(img) {
       const scaleFactor = Math.min(
         canvas.width / img.width,
@@ -139,14 +133,11 @@ Canvas Page
       canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
     });
 
-    // Setup tools
-    document.getElementById("highlightToolBtn")
-      .addEventListener("click", enableHighlightTool);
-    document.getElementById("rectSelectToolBtn")
-      .addEventListener("click", enableRectTool);
+    document.getElementById("highlightToolBtn").addEventListener("click", enableHighlightTool);
+    document.getElementById("rectSelectToolBtn").addEventListener("click", enableRectTool);
 
-    // Finish button
-    document.getElementById("finishBtn").addEventListener("click", onFinish);
+    // We remove the line: // document.getElementById("finishBtn").addEventListener("click", onFinish);
+    // Because we define the click below (no onFinish function).
   }
 
   function enableHighlightTool() {
@@ -200,41 +191,32 @@ Canvas Page
 
     canvas.on("mouse:up", function() {
       isDown = false;
-      // If you want multiple rectangles, remove these unbinds
-      // canvas.off("mouse:down");
-      // canvas.off("mouse:move");
-      // canvas.off("mouse:up");
     });
     console.log("Rectangle tool enabled");
   }
 
-  function onFinish() {
-    const objects = canvas.getObjects();
-    console.log("Canvas objects:", objects);
-    alert("Finish clicked. Check console for objects data.");
-
-    // Flatten the canvas
-    const mergedDataURL = canvas.toDataURL({
-      format: 'png',
-      quality: 1.0
-    });
-
-    // Upload flattened image to S3
+  document.getElementById("finishBtn").addEventListener("click", function() {
+    const mergedDataURL = canvas.toDataURL({ format: 'png', quality: 1.0 });
+    
     fetch("/upload_highlighted_image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mergedDataURL: mergedDataURL })
+      body: JSON.stringify({
+        mergedDataURL: mergedDataURL,
+        noteID: noteID // use the same noteID from above
+      })
     })
-    .then(res => res.json())
+    .then(response => response.json())
     .then(data => {
       if (data.error) {
         console.error("Error uploading:", data.error);
       } else {
-        console.log("Image uploaded successfully:", data);
-        alert("Your highlighted image was uploaded to S3!");
+        console.log("Success:", data);
+        alert("Your highlighted image and new markdown have been updated!");
       }
     })
     .catch(err => console.error("Fetch error:", err));
-  }
+  });
 </script>
+
 {% endblock scripts %}

@@ -327,47 +327,124 @@ def upload_temp():
 @app.route("/highlight/<note_id>/<temp_id>", methods=["GET"])
 @login_required
 def highlight_get(note_id, temp_id):
-    # Just serve the highlight.html and let it know
-    # which temp ID and note ID to use.
+    # The line below must pass note_id and temp_id to the template
     return render_template("highlight.html", note_id=note_id, temp_id=temp_id)
 
 
 @app.route("/upload_highlighted_image", methods=["POST"])
 @login_required
 def upload_highlighted_image():
-    user_email = current_user.id  # or use a default if user-specific is not needed
+    user_email = current_user.id
     data = request.get_json()
-    merged_data_url = data.get("mergedDataURL")
-    if not merged_data_url:
-        return jsonify({"error": "No mergedDataURL provided"}), 400
 
-    # merged_data_url should look like "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
-    # Split off the base64 header.
+    merged_data_url = data.get("mergedDataURL")
+    note_id = data.get("noteID")  # The note we want to update
+    if not merged_data_url or not note_id:
+        return jsonify({"error": "mergedDataURL and noteID are required"}), 400
+
+    # 1) Decode the PNG from the Data URL
     try:
         header, encoded = merged_data_url.split(",", 1)
     except ValueError:
         return jsonify({"error": "Invalid data URL format"}), 400
 
-    # Decode the base64
     image_bytes = base64.b64decode(encoded)
 
-    # Decide on your S3 key. For example:
-    s3_key = f"{user_email}/highlighted_notes/image.png"  # or if you want it fixed, omit user_email
-
+    # 2) Upload the final highlighted image to S3
+    highlighted_s3_key = f"{user_email}/highlighted_notes/{note_id}.png"
     try:
         s3_client.put_object(
             Bucket=BUCKET_NAME,
-            Key=s3_key,
+            Key=highlighted_s3_key,
             Body=image_bytes,
-            ContentType="image/png"  # helps S3 set the correct mime-type
+            ContentType="image/png"
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Failed uploading image to S3: {str(e)}"}), 500
+
+    # 3) Extract the highlighted text using OpenCV
+    #    - Our `extractFromImage` function expects a base64 string
+    #      so we re-encode the raw bytes:
+    from extractFromImage import extractFromImage
+    b64_again = base64.b64encode(image_bytes).decode("utf-8")
+    try:
+        extracted_lines = extractFromImage(b64_again)
+        # extracted_lines is a list of strings from the green highlight
+    except Exception as e:
+        return jsonify({"error": f"OpenCV extraction failed: {str(e)}"}), 500
+
+    # 4) Call an OpenAI function to transform that text into markdown
+    #    If you want to append it to an existing .md, we can:
+    note_md_key = f"{user_email}/markDowns/{note_id}.md"
+    
+    # A. Download existing markdown (if any)
+    existing_markdown = download_file(note_md_key, s3_client, BUCKET_NAME)
+    if existing_markdown is None or isinstance(existing_markdown, tuple):
+        existing_markdown = ""
+
+    # B. Convert the extracted lines to a single string
+    extracted_text_block = "\n".join(extracted_lines)
+
+    # C. Use your existing createNewParsedImageChat, or a simpler function:
+    #    For demonstration, let's just call a minimal helper:
+
+    print("extracted_text_block:", extracted_text_block)
+
+
+    new_markdown_snippet = call_openai_for_extracted_text(
+        OpenAIClient,
+        extracted_text_block
+    )
+
+    # Combine with existing
+    updated_markdown = existing_markdown + "\n\n" + new_markdown_snippet
+
+    # 5) Re-upload the updated markdown to S3
+    try:
+        s3_client.put_object(
+            Bucket=BUCKET_NAME,
+            Key=note_md_key,
+            Body=updated_markdown.encode("utf-8"),
+            ContentType="text/markdown"
+        )
+    except Exception as e:
+        return jsonify({"error": f"Failed to upload updated markdown: {str(e)}"}), 500
 
     return jsonify({
-        "message": "Image uploaded successfully to S3",
-        "s3_key": s3_key
+        "message": "Image uploaded, text extracted, markdown updated successfully.",
+        "highlighted_image": highlighted_s3_key,
+        "extracted_lines": extracted_lines,
+        "markdown_key": note_md_key
     }), 200
+
+
+def call_openai_for_extracted_text(openai_client, extracted_text):
+    """
+    Example function that calls OpenAI to handle or transform
+    the text from the highlighted areas. Adjust the model/prompt
+    for your actual usage.
+    """
+    import openai
+
+    if not extracted_text.strip():
+        return ""
+
+    prompt = (
+        "The user extracted the following lines from a highlighted image:\n\n"
+        f"{extracted_text}\n\n"
+        "Please reformat or tidy this text in markdown, focusing only on essential content.\n"
+        "Return only valid markdown."
+    )
+
+    response = openai_client.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=300,
+        temperature=0.7,
+    )
+    new_md = response.choices[0].message["content"]
+    return new_md
+
 
 
 @app.route("/get_temp_image/<temp_id>", methods=["GET"])

@@ -5,6 +5,10 @@ import base64
 import io
 
 def extractFromImage(image_base64, output_text_path=None):
+
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+
     # Decode base64 to image bytes
     image_bytes = base64.b64decode(image_base64)
     image_stream = io.BytesIO(image_bytes)
